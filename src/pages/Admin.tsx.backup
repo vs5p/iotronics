@@ -1,0 +1,844 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import Navigation from "@/components/Navigation";
+import HangingBulb from "@/components/HangingBulb";
+import PageFooter from "@/components/PageFooter";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Trash2, Edit2, LogOut, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  getProjects,
+  addProject,
+  updateProject,
+  deleteProject,
+  subscribeToProjects,
+  getNews,
+  addNews,
+  updateNews,
+  deleteNews,
+  subscribeToNews,
+  logoutAdmin,
+  onAuthChange,
+  updateProjectsOrder,
+  updateNewsOrder,
+} from "@/lib/supabase";
+
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  icon: string;
+  status: "Completed" | "In Progress";
+  tags: string[];
+  gradient: string;
+  github_url?: string;
+  website_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface NewsItem {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  type: "hackathon" | "blog" | "event" | "project";
+  icon: string;
+  image: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Sortable components
+const SortableProjectItem = ({ project, children }: { project: Project; children: (listeners: any) => React.ReactNode }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: project.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children(listeners)}
+    </div>
+  );
+};
+
+const SortableNewsItem = ({ newsItem, children }: { newsItem: NewsItem; children: (listeners: any) => React.ReactNode }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: newsItem.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children(listeners)}
+    </div>
+  );
+};
+
+const AVAILABLE_ICONS = ["🏠", "🚀", "💻", "🔧", "📱", "🌍", "💡", "⚡", "🎯", "🏆", "📚", "📅", "🔐", "☁️", "🛠️"];
+const NEWS_TYPES = ["hackathon", "blog", "event", "project"];
+const PRESET_GRADIENTS = [
+  { name: "Blue to Purple", value: "from-blue-500 to-purple-600" },
+  { name: "Purple to Pink", value: "from-purple-500 to-pink-600" },
+  { name: "Green to Teal", value: "from-green-500 to-teal-600" },
+  { name: "Orange to Red", value: "from-orange-500 to-red-600" },
+  { name: "Cyan to Blue", value: "from-cyan-500 to-blue-600" },
+  { name: "Pink to Rose", value: "from-pink-500 to-rose-600" },
+  { name: "Yellow to Orange", value: "from-yellow-500 to-orange-600" },
+  { name: "Indigo to Purple", value: "from-indigo-500 to-purple-600" },
+];
+
+const Admin = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Projects
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [projectForm, setProjectForm] = useState({
+    title: "",
+    description: "",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&h=300&fit=crop",
+    icon: "🚀",
+    status: "In Progress" as "Completed" | "In Progress",
+    tags: "",
+    gradient: "from-blue-500 to-purple-600",
+    github_url: "",
+    website_url: "",
+  });
+
+  // News
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
+  const [newsForm, setNewsForm] = useState({
+    title: "",
+    description: "",
+    date: new Date().toISOString().split("T")[0],
+    type: "event" as "hackathon" | "blog" | "event" | "project",
+    icon: "🚀",
+    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
+  });
+
+  const [submitting, setSubmitting] = useState(false);
+
+  // Auth
+  useEffect(() => {
+    const subscription = onAuthChange((currentUser) => {
+      if (!currentUser) {
+        navigate("/login");
+      } else {
+        setUser(currentUser);
+        setLoading(false);
+      }
+    });
+    return () => subscription?.unsubscribe();
+  }, [navigate]);
+
+  // Load projects
+  useEffect(() => {
+    if (!user) return;
+    let subscription: ReturnType<typeof subscribeToProjects> | null = null;
+
+    const loadProjects = async () => {
+      try {
+        const data = await getProjects();
+        setProjects(data);
+        subscription = subscribeToProjects(setProjects);
+      } catch (error) {
+        console.error("Failed to load projects:", error);
+        toast.error("Failed to load projects");
+      }
+    };
+
+    loadProjects();
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [user, toast]);
+
+  // Load news
+  useEffect(() => {
+    if (!user) return;
+    let subscription: ReturnType<typeof subscribeToNews> | null = null;
+
+    const loadNews = async () => {
+      try {
+        const data = await getNews();
+        setNews(data);
+        subscription = subscribeToNews(setNews);
+      } catch (error) {
+        console.error("Failed to load news:", error);
+        toast.error("Failed to load news");
+      }
+    };
+
+    loadNews();
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [user, toast]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <motion.div
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="text-white text-xl"
+        >
+          Loading...
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Project handlers
+  const handleAddProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectForm.title || !projectForm.description) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const projectData = {
+        ...projectForm,
+        tags: projectForm.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag),
+        github_url: projectForm.github_url ? (projectForm.github_url.startsWith('http') ? projectForm.github_url : `https://${projectForm.github_url}`) : "",
+        website_url: projectForm.website_url ? (projectForm.website_url.startsWith('http') ? projectForm.website_url : `https://${projectForm.website_url}`) : "",
+      };
+      if (editingProject) {
+        await updateProject(editingProject.id, projectData);
+        toast.success("Project updated successfully");
+      } else {
+        await addProject(projectData);
+        toast.success("Project added successfully");
+      }
+      clearProjectForm();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save project");
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const clearProjectForm = () => {
+    setEditingProject(null);
+    setProjectForm({
+      title: "",
+      description: "",
+      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&h=300&fit=crop",
+      icon: "🚀",
+      status: "In Progress",
+      tags: "",
+      gradient: "from-blue-500 to-purple-600",
+      github_url: "",
+      website_url: "",
+    });
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      await deleteProject(projectId);
+      toast.success("Project deleted successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete project");
+    }
+  };
+
+  // News handlers
+  const handleAddNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsForm.title || !newsForm.description) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      if (editingNews) {
+        await updateNews(editingNews.id, newsForm);
+        toast.success("News updated successfully");
+      } else {
+        await addNews(newsForm);
+        toast.success("News added successfully");
+      }
+      clearNewsForm();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save news");
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const clearNewsForm = () => {
+    setEditingNews(null);
+    setNewsForm({
+      title: "",
+      description: "",
+      date: new Date().toISOString().split("T")[0],
+      type: "event",
+      icon: "🚀",
+      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
+    });
+  };
+
+  const handleDeleteNews = async (newsId: string) => {
+    try {
+      await deleteNews(newsId);
+      toast.success("News deleted successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete news");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutAdmin();
+      navigate("/");
+      toast.success("Logged out successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to logout");
+    }
+  };
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleProjectDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = projects.findIndex(p => p.id === active.id);
+      const newIndex = projects.findIndex(p => p.id === over.id);
+
+      const newProjects = arrayMove(projects, oldIndex, newIndex);
+      setProjects(newProjects);
+
+      // Update display_order in database
+      try {
+        const projectsOrder = newProjects.map((project, index) => ({
+          id: project.id,
+          display_order: index + 1,
+        }));
+        await updateProjectsOrder(projectsOrder);
+        toast.success("Projects reordered successfully");
+      } catch (error: any) {
+        toast.error(error.message || "Failed to reorder projects");
+        // Revert on error
+        const data = await getProjects();
+        setProjects(data);
+      }
+    }
+  };
+
+  const handleNewsDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = news.findIndex(n => n.id === active.id);
+      const newIndex = news.findIndex(n => n.id === over.id);
+
+      const newNews = arrayMove(news, oldIndex, newIndex);
+      setNews(newNews);
+
+      // Update display_order in database
+      try {
+        const newsOrder = newNews.map((item, index) => ({
+          id: item.id,
+          display_order: index + 1,
+        }));
+        await updateNewsOrder(newsOrder);
+        toast.success("News reordered successfully");
+      } catch (error: any) {
+        toast.error(error.message || "Failed to reorder news");
+        // Revert on error
+        const data = await getNews();
+        setNews(data);
+      }
+    }
+  };
+
+  return (
+    <div className={`min-h-screen transition-colors ${isDarkMode ? "bg-black text-white" : "bg-white text-black"}`}>
+      <HangingBulb isOn={!isDarkMode} onToggle={() => setIsDarkMode(!isDarkMode)} />
+      <Navigation />
+
+      <main className="relative pt-24 pb-16">
+        <div className="container mx-auto px-4">
+          <motion.div
+            className="mb-12 flex justify-between items-start"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div>
+              <h1 className="font-orbitron text-4xl md:text-5xl font-bold mb-2">Admin Dashboard</h1>
+              <p className="font-rajdhani text-lg text-muted-foreground">
+                Manage projects and news for your IoTRONICS website
+              </p>
+            </div>
+            <Button onClick={handleLogout} variant="destructive" className="gap-2">
+              <LogOut className="w-4 h-4" />
+              Logout ({user?.email})
+            </Button>
+          </motion.div>
+
+          <Tabs defaultValue="projects" className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="projects">Projects</TabsTrigger>
+              <TabsTrigger value="news">What's Happening</TabsTrigger>
+            </TabsList>
+
+            {/* Projects Tab */}
+            <TabsContent value="projects" className="space-y-6">
+              <div className="grid md:grid-cols-3 gap-6">
+                <Card className="md:col-span-1">
+                  <CardHeader>
+                    <CardTitle>{editingProject ? "Edit Project" : "Add Project"}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleAddProject} className="space-y-4">
+                      <Input
+                        placeholder="Title"
+                        value={projectForm.title}
+                        onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
+                      />
+                      <Textarea
+                        placeholder="Description"
+                        value={projectForm.description}
+                        onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+                        rows={3}
+                      />
+                      <Input
+                        placeholder="Image URL"
+                        value={projectForm.image}
+                        onChange={(e) => setProjectForm({ ...projectForm, image: e.target.value })}
+                      />
+                      <Select value={projectForm.icon} onValueChange={(value) => setProjectForm({ ...projectForm, icon: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AVAILABLE_ICONS.map((icon) => (
+                            <SelectItem key={icon} value={icon}>
+                              {icon}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={projectForm.status}
+                        onValueChange={(value) => setProjectForm({ ...projectForm, status: value as "Completed" | "In Progress" })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Completed">Completed</SelectItem>
+                          <SelectItem value="In Progress">In Progress</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder="Tags (comma separated)"
+                        value={projectForm.tags}
+                        onChange={(e) => setProjectForm({ ...projectForm, tags: e.target.value })}
+                      />
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Gradient</label>
+                        <Select value={projectForm.gradient} onValueChange={(value) => setProjectForm({ ...projectForm, gradient: value })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PRESET_GRADIENTS.map((gradient) => (
+                              <SelectItem key={gradient.value} value={gradient.value}>
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-6 h-6 rounded bg-gradient-to-r ${gradient.value}`} />
+                                  {gradient.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Input
+                        placeholder="GitHub URL (optional)"
+                        value={projectForm.github_url}
+                        onChange={(e) => setProjectForm({ ...projectForm, github_url: e.target.value })}
+                      />
+                      <Input
+                        placeholder="Website URL (optional)"
+                        value={projectForm.website_url}
+                        onChange={(e) => setProjectForm({ ...projectForm, website_url: e.target.value })}
+                      />
+                      <div className="flex gap-2">
+                        <Button type="submit" disabled={submitting} className="flex-1">
+                          {submitting ? "Saving..." : editingProject ? "Update" : "Add"}
+                        </Button>
+                        {editingProject && (
+                          <Button type="button" onClick={clearProjectForm} variant="outline" className="flex-1">
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                <div className="md:col-span-2 space-y-4">
+                  <h3 className="font-bold text-lg">Projects ({projects.length})</h3>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleProjectDragEnd}
+                  >
+                    <SortableContext
+                      items={projects.map(p => p.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                        {projects.length === 0 ? (
+                          <p className="text-muted-foreground">No projects yet</p>
+                        ) : (
+                          projects.map((project) => (
+                            <SortableProjectItem key={project.id} project={project}>
+                              {(listeners) => (
+                                <Card>
+                                  <CardContent className="pt-4">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex items-start gap-2 flex-1">
+                                        <button
+                                          className="cursor-grab active:cursor-grabbing mt-1 text-muted-foreground hover:text-foreground transition-colors"
+                                          {...listeners}
+                                        >
+                                          <GripVertical className="w-5 h-5" />
+                                        </button>
+                                        <div className="flex-1">
+                                          <h4 className="font-bold">
+                                            {project.icon} {project.title}
+                                          </h4>
+                                          <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
+                                          <div className="flex gap-2 mt-2 flex-wrap">
+                                            <Badge variant="outline">{project.status}</Badge>
+                                            {project.tags.map((tag) => (
+                                              <Badge key={tag} variant="secondary">
+                                                {tag}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2 ml-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setEditingProject(project);
+                                          setProjectForm({
+                                            title: project.title,
+                                            description: project.description,
+                                            image: project.image,
+                                            icon: project.icon,
+                                            status: project.status,
+                                            tags: project.tags.join(", "),
+                                            gradient: project.gradient,
+                                            github_url: project.github_url || "",
+                                            website_url: project.website_url || "",
+                                          });
+                                        }}
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                      </Button>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button size="sm" variant="destructive">
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure? This cannot be undone.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <div className="flex gap-2 justify-end">
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              onClick={() => handleDeleteProject(project.id)}
+                                              className="bg-red-600 hover:bg-red-700"
+                                            >
+                                              Delete
+                                            </AlertDialogAction>
+                                          </div>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </div>
+                                  </div>
+                                </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+                    </SortableProjectItem>
+                    ))
+                        )}
+                </div>
+              </SortableContext>
+            </DndContext>
+        </div>
+    </div>
+            </TabsContent >
+
+  {/* News Tab */ }
+  < TabsContent value = "news" className = "space-y-6" >
+    <div className="grid md:grid-cols-3 gap-6">
+      <Card className="md:col-span-1">
+        <CardHeader>
+          <CardTitle>{editingNews ? "Edit News" : "Add News"}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAddNews} className="space-y-4">
+            <Input
+              placeholder="Title"
+              value={newsForm.title}
+              onChange={(e) => setNewsForm({ ...newsForm, title: e.target.value })}
+            />
+            <Textarea
+              placeholder="Description"
+              value={newsForm.description}
+              onChange={(e) => setNewsForm({ ...newsForm, description: e.target.value })}
+              rows={3}
+            />
+            <Input
+              type="date"
+              value={newsForm.date}
+              onChange={(e) => setNewsForm({ ...newsForm, date: e.target.value })}
+            />
+            <Select value={newsForm.type} onValueChange={(value) => setNewsForm({ ...newsForm, type: value as any })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {NEWS_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={newsForm.icon} onValueChange={(value) => setNewsForm({ ...newsForm, icon: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AVAILABLE_ICONS.map((icon) => (
+                  <SelectItem key={icon} value={icon}>
+                    {icon}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Image URL"
+              value={newsForm.image}
+              onChange={(e) => setNewsForm({ ...newsForm, image: e.target.value })}
+            />
+            <div className="flex gap-2">
+              <Button type="submit" disabled={submitting} className="flex-1">
+                {submitting ? "Saving..." : editingNews ? "Update" : "Add"}
+              </Button>
+              {editingNews && (
+                <Button type="button" onClick={clearNewsForm} variant="outline" className="flex-1">
+                  Cancel
+                </Button>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="md:col-span-2 space-y-4">
+        <h3 className="font-bold text-lg">News Items ({news.length})</h3>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleNewsDragEnd}
+        >
+          <SortableContext
+            items={news.map(n => n.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {news.length === 0 ? (
+                <p className="text-muted-foreground">No news items yet</p>
+              ) : (
+                news.map((item) => (
+                  <SortableNewsItem key={item.id} newsItem={item}>
+                    {(listeners) => (
+                      <Card>
+                        <CardContent className="pt-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-start gap-2 flex-1">
+                              <button
+                                className="cursor-grab active:cursor-grabbing mt-1 text-muted-foreground hover:text-foreground transition-colors"
+                                {...listeners}
+                              >
+                                <GripVertical className="w-5 h-5" />
+                              </button>
+                              <div className="flex-1">
+                                <h4 className="font-bold">
+                                  {item.icon} {item.title}
+                                </h4>
+                                <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                                <div className="flex gap-2 mt-2">
+                                  <Badge variant="outline">{item.date}</Badge>
+                                  <Badge variant="secondary">{item.type}</Badge>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 ml-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingNews(item);
+                                    setNewsForm({
+                                      title: item.title,
+                                      description: item.description,
+                                      date: item.date,
+                                      type: item.type,
+                                      icon: item.icon,
+                                      image: item.image,
+                                    });
+                                  }}
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="destructive">
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete News</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure? This cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <div className="flex gap-2 justify-end">
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteNews(item.id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </div>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </SortableNewsItem>
+                ))
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
+    </div>
+            </TabsContent >
+          </Tabs >
+        </div >
+      </main >
+
+  <PageFooter />
+    </div >
+  );
+};
+
+export default Admin;

@@ -6,8 +6,15 @@ import HangingBulb from "@/components/HangingBulb";
 import PageFooter from "@/components/PageFooter";
 import { FloatingParticles, CircuitBackground } from "@/components/LiveElements";
 
+import { toast } from "sonner";
+
+import { sendMessage } from "@/lib/supabase";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
 const Contact = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,9 +30,24 @@ const Contact = () => {
     }
   }, [isDarkMode]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(formData);
+    if (!formData.name || !formData.email || !formData.message) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await sendMessage(formData);
+      toast.success("Message sent successfully!");
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Failed to send message");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -163,7 +185,7 @@ const Contact = () => {
                         ))}
                       </svg>
                     </div>
-                    
+
                     {/* Location pin */}
                     <motion.div
                       className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -220,7 +242,7 @@ const Contact = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
               >
-                <form onSubmit={handleSubmit} className="card-circuit">
+                <form onSubmit={handleSubmit} className="card-circuit relative z-20">
                   <h3 className="font-orbitron text-2xl font-bold mb-8">Send a Message</h3>
 
                   <div className="space-y-6">
@@ -229,11 +251,11 @@ const Contact = () => {
                         <label className="block font-mono text-sm text-muted-foreground mb-2">
                           Name
                         </label>
-                        <input
-                          type="text"
+                        <Input
+                          name="name"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full px-4 py-3 rounded-lg bg-muted/50 border border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-rajdhani"
+                          className="font-rajdhani bg-muted/50"
                           placeholder="Your name"
                         />
                       </div>
@@ -241,11 +263,12 @@ const Contact = () => {
                         <label className="block font-mono text-sm text-muted-foreground mb-2">
                           Email
                         </label>
-                        <input
+                        <Input
                           type="email"
+                          name="email"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="w-full px-4 py-3 rounded-lg bg-muted/50 border border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-rajdhani"
+                          className="font-rajdhani bg-muted/50"
                           placeholder="your@email.com"
                         />
                       </div>
@@ -255,11 +278,11 @@ const Contact = () => {
                       <label className="block font-mono text-sm text-muted-foreground mb-2">
                         Subject
                       </label>
-                      <input
-                        type="text"
+                      <Input
+                        name="subject"
                         value={formData.subject}
                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        className="w-full px-4 py-3 rounded-lg bg-muted/50 border border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-rajdhani"
+                        className="font-rajdhani bg-muted/50"
                         placeholder="What's this about?"
                       />
                     </div>
@@ -268,23 +291,25 @@ const Contact = () => {
                       <label className="block font-mono text-sm text-muted-foreground mb-2">
                         Message
                       </label>
-                      <textarea
+                      <Textarea
+                        name="message"
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                         rows={5}
-                        className="w-full px-4 py-3 rounded-lg bg-muted/50 border border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-rajdhani resize-none"
+                        className="font-rajdhani resize-none bg-muted/50"
                         placeholder="Your message..."
                       />
                     </div>
 
                     <motion.button
                       type="submit"
-                      className="w-full btn-glow flex items-center justify-center gap-2"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      disabled={submitting}
+                      className="w-full btn-glow flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      whileHover={{ scale: submitting ? 1 : 1.02 }}
+                      whileTap={{ scale: submitting ? 1 : 0.98 }}
                     >
                       <Send size={18} />
-                      Send Message
+                      {submitting ? "Sending..." : "Send Message"}
                     </motion.button>
                   </div>
                 </form>

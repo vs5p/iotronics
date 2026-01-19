@@ -1,9 +1,45 @@
 import { motion } from "framer-motion";
 import { Heart, Instagram, Linkedin, Github, Twitter, Mail, MapPin, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
+import { toast } from "sonner";
+import { subscribeToNewsletter } from "@/lib/supabase";
 import logoImage from "@/assets/logo.png";
 
 const PageFooter = () => {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubscribe = async () => {
+    if (!email) {
+      toast.error("Please enter an email address");
+      return;
+    }
+
+    // Simple email regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await subscribeToNewsletter(email);
+      toast.success("Successfully subscribed!");
+      setEmail("");
+    } catch (error: any) {
+      if (error.code === '23505') { // Unique violation
+        toast.error("This email is already subscribed");
+      } else {
+        console.error(error);
+        toast.error("Failed to subscribe. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const quickLinks = [
     { label: "Home", path: "/" },
     { label: "About", path: "/about" },
@@ -25,7 +61,7 @@ const PageFooter = () => {
     <footer className="relative py-16 border-t border-border bg-card">
       {/* Circuit trace top */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
-      
+
       {/* Animated nodes on top */}
       <div className="absolute top-0 left-0 right-0 h-1 overflow-hidden">
         {[0, 1, 2].map((i) => (
@@ -86,7 +122,7 @@ const PageFooter = () => {
               </span>
             </motion.div>
             <p className="font-rajdhani text-muted-foreground mb-6 leading-relaxed">
-              The premier IoT club dedicated to exploring the intersection of electronics, 
+              The premier IoT club dedicated to exploring the intersection of electronics,
               programming, and innovation.
             </p>
             <div className="flex gap-3">
@@ -154,14 +190,19 @@ const PageFooter = () => {
               <input
                 type="email"
                 placeholder="your@email.com"
-                className="flex-1 px-4 py-2 rounded-lg bg-muted/50 border border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-rajdhani text-sm"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                className="flex-1 px-4 py-2 rounded-lg bg-muted/50 border border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-rajdhani text-sm disabled:opacity-50"
               />
               <motion.button
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-rajdhani font-semibold text-sm"
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-rajdhani font-semibold text-sm disabled:opacity-50"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={handleSubscribe}
+                disabled={loading}
               >
-                Subscribe
+                {loading ? "..." : "Subscribe"}
               </motion.button>
             </div>
           </div>

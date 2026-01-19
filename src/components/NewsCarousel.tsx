@@ -1,67 +1,58 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Trophy, BookOpen, Calendar, Cpu, ChevronLeft, ChevronRight } from "lucide-react";
+import { getNews, supabase } from "@/lib/supabase";
 
-interface NewsItem {
-  id: number;
-  type: "hackathon" | "blog" | "event" | "project";
-  title: string;
-  description: string;
-  date: string;
-  icon: React.ReactNode;
-  image: string;
-}
-
-const newsItems: NewsItem[] = [
-  {
-    id: 1,
-    type: "hackathon",
-    title: "Won Smart India Hackathon 2024",
-    description: "Our team secured first place with an IoT-based healthcare solution",
-    date: "Dec 2024",
-    icon: <Trophy className="w-6 h-6" />,
-    image: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=300&fit=crop",
-  },
-  {
-    id: 2,
-    type: "blog",
-    title: "New Blog: Getting Started with ESP32",
-    description: "A comprehensive guide for beginners in embedded systems",
-    date: "Nov 2024",
-    icon: <BookOpen className="w-6 h-6" />,
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop",
-  },
-  {
-    id: 3,
-    type: "event",
-    title: "Upcoming: IoT Workshop Series",
-    description: "5-day hands-on workshop covering sensors to cloud integration",
-    date: "Jan 2025",
-    icon: <Calendar className="w-6 h-6" />,
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-  },
-  {
-    id: 4,
-    type: "project",
-    title: "Smart Campus v2.0 Launched",
-    description: "Major update with AI-powered energy optimization",
-    date: "Oct 2024",
-    icon: <Cpu className="w-6 h-6" />,
-    image: "https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=400&h=300&fit=crop",
-  },
-];
+// Icon mapping for news items
+const iconMap: Record<string, React.ReactNode> = {
+  Trophy: <Trophy className="w-6 h-6" />,
+  BookOpen: <BookOpen className="w-6 h-6" />,
+  Calendar: <Calendar className="w-6 h-6" />,
+  Cpu: <Cpu className="w-6 h-6" />,
+};
 
 const NewsCarousel = () => {
+  const [newsItems, setNewsItems] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
 
   useEffect(() => {
+    const loadNews = async () => {
+      try {
+        const data = await getNews();
+        setNewsItems(data);
+      } catch (error) {
+        console.error('Failed to load news:', error);
+      }
+    };
+
+    loadNews();
+
+    // Subscribe to real-time updates
+    const subscription = supabase
+      .channel('news_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'news' },
+        () => {
+          loadNews();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (newsItems.length === 0) return;
     const interval = setInterval(() => {
       setDirection(1);
       setCurrentIndex((prev) => (prev + 1) % newsItems.length);
-    }, 5000);
+    }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [newsItems.length]);
 
   const slideVariants = {
     enter: (direction: number) => ({
@@ -88,7 +79,29 @@ const NewsCarousel = () => {
     });
   };
 
-  const currentItem = newsItems[currentIndex];
+  const currentItem = newsItems.length > 0 ? newsItems[currentIndex] : null;
+
+  if (!currentItem || newsItems.length === 0) {
+    return (
+      <section className="py-16 relative overflow-hidden">
+        <div className="container mx-auto px-4">
+          <motion.div
+            className="text-center mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h3 className="font-orbitron text-2xl md:text-3xl font-bold mb-2">
+              What's <span className="gradient-text">Happening</span>
+            </h3>
+            <p className="font-rajdhani text-muted-foreground">
+              No news items yet. Check back soon!
+            </p>
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
 
   const typeColors = {
     hackathon: "text-accent border-accent/30 bg-accent/10",
@@ -158,8 +171,8 @@ const NewsCarousel = () => {
                     className="relative w-full md:w-48 h-32 md:h-36 rounded-xl overflow-hidden flex-shrink-0 border border-border"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <img 
-                      src={currentItem.image} 
+                    <img
+                      src={currentItem.image}
                       alt={currentItem.title}
                       className="w-full h-full object-cover"
                     />
@@ -175,7 +188,7 @@ const NewsCarousel = () => {
                       }}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
-                      {currentItem.icon}
+                      {iconMap[currentItem.icon] || <span className="text-2xl">{currentItem.icon}</span>}
                     </motion.div>
                   </motion.div>
 
@@ -199,9 +212,8 @@ const NewsCarousel = () => {
               {newsItems.map((_, i) => (
                 <motion.button
                   key={i}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    i === currentIndex ? "bg-primary" : "bg-muted-foreground/30"
-                  }`}
+                  className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? "bg-primary" : "bg-muted-foreground/30"
+                    }`}
                   onClick={() => {
                     setDirection(i > currentIndex ? 1 : -1);
                     setCurrentIndex(i);

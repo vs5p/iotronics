@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Users, Linkedin, Github, Twitter, Code, Cpu, Megaphone, PenTool, Wrench } from "lucide-react";
+import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import HangingBulb from "@/components/HangingBulb";
 import PageFooter from "@/components/PageFooter";
@@ -408,13 +409,15 @@ const Team = () => {
                   We're always looking for passionate individuals who want to explore,
                   learn, and innovate in the world of IoT.
                 </p>
-                <motion.button
-                  className="btn-glow"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Apply Now
-                </motion.button>
+                <Link to="/admin">
+                  <motion.button
+                    className="btn-glow"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Apply Now
+                  </motion.button>
+                </Link>
               </div>
             </motion.div>
           </div>

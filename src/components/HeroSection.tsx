@@ -1,5 +1,6 @@
 import { motion, useMotionValue, useSpring, animate, useTransform } from "framer-motion";
 import { ChevronDown, Zap, Wifi, Cpu, Radio } from "lucide-react";
+import { Link } from "react-router-dom";
 import logoImage from "@/assets/logo.png";
 import { useEffect, useState } from "react";
 
@@ -118,7 +119,7 @@ const HeroSection = ({ onScrollDown }: HeroSectionProps) => {
             <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
           </linearGradient>
         </defs>
-        
+
         {/* Animated connection lines */}
         {[...Array(5)].map((_, i) => (
           <motion.line
@@ -272,20 +273,24 @@ const HeroSection = ({ onScrollDown }: HeroSectionProps) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.6, duration: 0.6 }}
             >
-              <motion.button
-                className="btn-glow"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Explore Projects
-              </motion.button>
-              <motion.button
-                className="btn-circuit"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Join the Club
-              </motion.button>
+              <Link to="/projects">
+                <motion.button
+                  className="btn-glow"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Explore Projects
+                </motion.button>
+              </Link>
+              <Link to="/admin">
+                <motion.button
+                  className="btn-circuit"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Join the Club
+                </motion.button>
+              </Link>
             </motion.div>
           </div>
         </div>

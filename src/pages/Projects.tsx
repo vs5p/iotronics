@@ -1,64 +1,63 @@
 import { motion } from "framer-motion";
-import { Lightbulb, ExternalLink, Github, Home, Thermometer, Car, Heart, Cpu, Wifi } from "lucide-react";
+import { Lightbulb, ExternalLink, Github, Home, Thermometer, Car, Heart, Cpu, Wifi, Database, Cloud, Shield, Settings } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
 import HangingBulb from "@/components/HangingBulb";
 import PageFooter from "@/components/PageFooter";
 import { FloatingParticles, CircuitBackground } from "@/components/LiveElements";
 import { useState, useEffect } from "react";
+import { getProjects, supabase, submitProposal } from "@/lib/supabase";
 
-const projects = [
-  {
-    title: "Smart Campus System",
-    description: "IoT-based campus management with automated lighting, attendance tracking, and energy monitoring. This comprehensive system uses ESP32 modules placed across campus buildings.",
-    icon: <Home className="w-6 h-6" />,
-    tags: ["ESP32", "MQTT", "React", "Node.js"],
-    status: "Completed",
-    image: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
-  },
-  {
-    title: "Environmental Monitor",
-    description: "Real-time air quality, temperature, and humidity monitoring with data visualization dashboard. Features predictive analytics for weather patterns.",
-    icon: <Thermometer className="w-6 h-6" />,
-    tags: ["Arduino", "Sensors", "Firebase", "Flutter"],
-    status: "In Progress",
-    image: "linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--primary)))",
-  },
-  {
-    title: "Autonomous Robot",
-    description: "Line-following and obstacle-avoiding robot with computer vision capabilities. Can navigate complex mazes and detect objects using ML.",
-    icon: <Car className="w-6 h-6" />,
-    tags: ["Raspberry Pi", "OpenCV", "Python", "Motors"],
-    status: "Completed",
-    image: "linear-gradient(135deg, hsl(var(--accent)), hsl(var(--secondary)))",
-  },
-  {
-    title: "Health Band",
-    description: "Wearable device for monitoring heart rate, steps, and sleep patterns with mobile app. Syncs data to cloud for health tracking.",
-    icon: <Heart className="w-6 h-6" />,
-    tags: ["ESP32", "BLE", "React Native", "ML"],
-    status: "In Progress",
-    image: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))",
-  },
-  {
-    title: "Smart Agriculture",
-    description: "Automated irrigation system based on soil moisture, weather data, and crop requirements. Reduces water usage by 40%.",
-    icon: <Cpu className="w-6 h-6" />,
-    tags: ["LoRa", "Arduino", "Solar", "Cloud"],
-    status: "Completed",
-    image: "linear-gradient(135deg, hsl(var(--glow-green)), hsl(var(--primary)))",
-  },
-  {
-    title: "Home Automation Hub",
-    description: "Central hub for controlling all smart home devices with voice commands and mobile app. Supports multiple protocols.",
-    icon: <Wifi className="w-6 h-6" />,
-    tags: ["Zigbee", "Matter", "Voice AI", "Security"],
-    status: "In Progress",
-    image: "linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--accent)))",
-  },
-];
+// Icon mapping
+const iconMap: Record<string, React.ReactNode> = {
+  Home: <Home className="w-6 h-6" />,
+  Thermometer: <Thermometer className="w-6 h-6" />,
+  Car: <Car className="w-6 h-6" />,
+  Heart: <Heart className="w-6 h-6" />,
+  Cpu: <Cpu className="w-6 h-6" />,
+  Wifi: <Wifi className="w-6 h-6" />,
+  Database: <Database className="w-6 h-6" />,
+  Cloud: <Cloud className="w-6 h-6" />,
+  Shield: <Shield className="w-6 h-6" />,
+  Settings: <Settings className="w-6 h-6" />,
+};
 
 const Projects = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [proposal, setProposal] = useState({
+    name: "",
+    email: "",
+    title: "",
+    idea: "",
+  });
+
+  const handleProposalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { name, email, title, idea } = proposal;
+
+    if (!name || !email || !title || !idea) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      await submitProposal(proposal);
+      toast.success("Proposal submitted successfully!");
+      setProposal({ name: "", email: "", title: "", idea: "" });
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to submit proposal. Please try again.");
+    }
+  };
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -67,6 +66,38 @@ const Projects = () => {
       document.documentElement.classList.add("light");
     }
   }, [isDarkMode]);
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        setLoading(true);
+        const data = await getProjects();
+        setProjects(data);
+      } catch (error) {
+        console.error('Failed to load projects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProjects();
+
+    // Subscribe to real-time updates
+    const subscription = supabase
+      .channel('projects_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'projects' },
+        () => {
+          loadProjects();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -108,127 +139,147 @@ const Projects = () => {
         {/* Projects Grid */}
         <section className="py-16 bg-muted/30 relative overflow-hidden">
           <div className="container mx-auto px-4 relative z-10">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {projects.map((project, index) => (
-                <motion.div
-                  key={project.title}
-                  className="group relative rounded-2xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-500"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ y: -5 }}
-                >
-                  {/* Project image/gradient header */}
-                  <div
-                    className="h-48 relative"
-                    style={{ background: project.image }}
+            {loading ? (
+              <div className="text-center text-gray-400 text-xl py-12">Loading projects...</div>
+            ) : projects.length === 0 ? (
+              <div className="text-center text-gray-400 text-xl py-12">No projects yet. Check back soon!</div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {projects.map((project, index) => (
+                  <motion.div
+                    key={project.id}
+                    className="group relative rounded-2xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-500"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ y: -5 }}
                   >
-                    {/* Overlay pattern */}
-                    <div className="absolute inset-0 opacity-30">
-                      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        {[...Array(10)].map((_, i) => (
-                          <motion.line
-                            key={i}
-                            x1={i * 10}
-                            y1="0"
-                            x2={i * 10}
-                            y2="100"
-                            stroke="white"
-                            strokeWidth="0.5"
-                            strokeDasharray="5 5"
-                            animate={{
-                              strokeDashoffset: [0, -10],
-                            }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              ease: "linear",
-                              delay: i * 0.1,
-                            }}
-                          />
-                        ))}
-                      </svg>
-                    </div>
+                    {/* Project image/gradient header */}
+                    <div className="h-48 relative overflow-hidden">
+                      {/* Background image */}
+                      {project.image && (
+                        <img
+                          src={project.image}
+                          alt={project.title}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      )}
+                      {/* Gradient overlay */}
+                      <div
+                        className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 opacity-60"
+                      />
+                      {/* Overlay pattern */}
+                      <div className="absolute inset-0 opacity-20">
+                        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                          {[...Array(10)].map((_, i) => (
+                            <motion.line
+                              key={i}
+                              x1={i * 10}
+                              y1="0"
+                              x2={i * 10}
+                              y2="100"
+                              stroke="white"
+                              strokeWidth="0.5"
+                              strokeDasharray="5 5"
+                              animate={{
+                                strokeDashoffset: [0, -10],
+                              }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "linear",
+                                delay: i * 0.1,
+                              }}
+                            />
+                          ))}
+                        </svg>
+                      </div>
 
-                    {/* Icon */}
-                    <motion.div
-                      className="absolute top-4 left-4 w-12 h-12 rounded-xl bg-background/20 backdrop-blur-sm flex items-center justify-center text-white"
-                      whileHover={{ scale: 1.1, rotate: 10 }}
-                    >
-                      {project.icon}
-                    </motion.div>
+                      {/* Icon */}
+                      <motion.div
+                        className="absolute top-4 left-4 w-12 h-12 rounded-xl bg-background/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl"
+                        whileHover={{ scale: 1.1, rotate: 10 }}
+                      >
+                        {project.icon}
+                      </motion.div>
 
-                    {/* Status badge */}
-                    <div
-                      className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-mono font-semibold ${
-                        project.status === "Completed"
+                      {/* Status badge */}
+                      <div
+                        className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-mono font-semibold ${project.status === "Completed"
                           ? "bg-glow-green/20 text-glow-green border border-glow-green/30"
                           : "bg-accent/20 text-accent border border-accent/30"
-                      }`}
-                    >
-                      {project.status}
+                          }`}
+                      >
+                        {project.status}
+                      </div>
+
+                      {/* Hover overlay */}
+                      <motion.div
+                        className="absolute inset-0 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 pointer-events-none group-hover:pointer-events-auto"
+                      >
+                        {project.website_url && (
+                          <a
+                            href={project.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:scale-110 transition-transform pointer-events-auto"
+                          >
+                            <ExternalLink size={20} />
+                          </a>
+                        )}
+                        {project.github_url && (
+                          <a
+                            href={project.github_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-12 h-12 rounded-xl bg-muted text-foreground flex items-center justify-center cursor-pointer hover:scale-110 transition-transform pointer-events-auto"
+                          >
+                            <Github size={20} />
+                          </a>
+                        )}
+                      </motion.div>
                     </div>
 
-                    {/* Hover overlay */}
-                    <motion.div
-                      className="absolute inset-0 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4"
-                    >
-                      <motion.button
-                        className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <ExternalLink size={20} />
-                      </motion.button>
-                      <motion.button
-                        className="w-12 h-12 rounded-xl bg-muted text-foreground flex items-center justify-center"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Github size={20} />
-                      </motion.button>
-                    </motion.div>
-                  </div>
+                    {/* Content */}
+                    <div className="p-6">
+                      <h3 className="font-orbitron text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
+                        {project.title}
+                      </h3>
+                      <p className="font-rajdhani text-muted-foreground mb-4 leading-relaxed text-sm">
+                        {project.description}
+                      </p>
 
-                  {/* Content */}
-                  <div className="p-6">
-                    <h3 className="font-orbitron text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
-                      {project.title}
-                    </h3>
-                    <p className="font-rajdhani text-muted-foreground mb-4 leading-relaxed text-sm">
-                      {project.description}
-                    </p>
-
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-2">
-                      {project.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-3 py-1 rounded-full text-xs font-mono bg-muted text-muted-foreground border border-border"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2">
+                        {project.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-3 py-1 rounded-full text-xs font-mono bg-muted text-muted-foreground border border-border"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Bottom circuit decoration */}
-                  <svg className="absolute bottom-0 left-0 right-0 h-1">
-                    <motion.rect
-                      width="100%"
-                      height="100%"
-                      fill="hsl(var(--primary))"
-                      initial={{ scaleX: 0 }}
-                      whileInView={{ scaleX: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.3 + index * 0.1, duration: 0.8 }}
-                      style={{ transformOrigin: "left" }}
-                    />
-                  </svg>
-                </motion.div>
-              ))}
-            </div>
+                    {/* Bottom circuit decoration */}
+                    <svg className="absolute bottom-0 left-0 right-0 h-1">
+                      <motion.rect
+                        width="100%"
+                        height="100%"
+                        fill="hsl(var(--primary))"
+                        initial={{ scaleX: 0 }}
+                        whileInView={{ scaleX: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.3 + index * 0.1, duration: 0.8 }}
+                        style={{ transformOrigin: "left" }}
+                      />
+                    </svg>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -247,13 +298,71 @@ const Projects = () => {
               <p className="font-rajdhani text-muted-foreground mb-8">
                 We're always looking for innovative ideas and collaborations. Share your project proposal with us!
               </p>
-              <motion.button
-                className="btn-glow"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Submit a Proposal
-              </motion.button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <motion.button
+                    className="btn-glow"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Submit a Proposal
+                  </motion.button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px] bg-card border-border text-foreground">
+                  <DialogHeader>
+                    <DialogTitle className="font-orbitron text-2xl">Submit Proposal</DialogTitle>
+                    <DialogDescription className="font-rajdhani text-muted-foreground">
+                      Share your IoT project idea with us. We'll get back to you!
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleProposalSubmit} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="font-mono">Name</Label>
+                      <Input
+                        id="name"
+                        value={proposal.name}
+                        onChange={(e) => setProposal({ ...proposal, name: e.target.value })}
+                        placeholder="Your Name"
+                        className="font-rajdhani bg-background border-border"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="font-mono">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={proposal.email}
+                        onChange={(e) => setProposal({ ...proposal, email: e.target.value })}
+                        placeholder="your@email.com"
+                        className="font-rajdhani bg-background border-border"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="title" className="font-mono">Project Title</Label>
+                      <Input
+                        id="title"
+                        value={proposal.title}
+                        onChange={(e) => setProposal({ ...proposal, title: e.target.value })}
+                        placeholder="Project Name"
+                        className="font-rajdhani bg-background border-border"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="idea" className="font-mono">Project Idea</Label>
+                      <Textarea
+                        id="idea"
+                        value={proposal.idea}
+                        onChange={(e) => setProposal({ ...proposal, idea: e.target.value })}
+                        placeholder="Describe your idea..."
+                        className="font-rajdhani min-h-[100px] bg-background border-border"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-rajdhani font-bold">
+                      Send Proposal
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </motion.div>
           </div>
         </section>
