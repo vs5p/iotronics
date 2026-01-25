@@ -1,5 +1,6 @@
+import React from "react";
 import { motion } from "framer-motion";
-import { Mail, MapPin, Phone, Send, Instagram, Linkedin, Github, Twitter } from "lucide-react";
+import { Mail, MapPin, Phone, Send, Instagram, Linkedin, Github } from "lucide-react";
 import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import HangingBulb from "@/components/HangingBulb";
@@ -23,7 +24,8 @@ const Contact = () => {
     }
   }, [isDarkMode]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+
     e.preventDefault();
     console.log(formData);
   };
@@ -78,9 +80,9 @@ const Contact = () => {
 
                 <div className="space-y-6 mb-12">
                   {[
-                    { icon: <MapPin size={24} />, label: "Location", value: "Engineering Block, Room 302\nUniversity Campus" },
-                    { icon: <Mail size={24} />, label: "Email", value: "iotronics@college.edu" },
-                    { icon: <Phone size={24} />, label: "Phone", value: "+1 (234) 567-8900" },
+                    { icon: <MapPin size={24} />, label: "Location", value: "F Block, EEE Dept, NMIT" },
+{ icon: <Phone size={24} />, label: "Contact", value: "Rounak: +91 80058 63350\nRohit: +91 63549 59448" },
+
                   ].map((item, i) => (
                     <motion.div
                       key={item.label}
@@ -100,119 +102,22 @@ const Contact = () => {
                     </motion.div>
                   ))}
                 </div>
+<motion.div
+  className="rounded-2xl overflow-hidden border border-border bg-card mb-12"
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true }}
+>
+  <iframe
+    title="EEE Dept NMIT"
+    src="https://www.google.com/maps?q=F%20Block%20EEE%20Dept%20NMIT&output=embed"
+    className="w-full h-96 border-0"
+    loading="lazy"
+  />
+</motion.div>
 
-                {/* Social links */}
-                <div className="mb-12">
-                  <h4 className="font-orbitron text-lg font-semibold mb-4">Follow Us</h4>
-                  <div className="flex gap-4">
-                    {[
-                      { icon: <Instagram size={20} />, label: "Instagram" },
-                      { icon: <Linkedin size={20} />, label: "LinkedIn" },
-                      { icon: <Github size={20} />, label: "GitHub" },
-                      { icon: <Twitter size={20} />, label: "Twitter" },
-                    ].map((social, i) => (
-                      <motion.button
-                        key={social.label}
-                        className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
-                        whileHover={{ scale: 1.1, y: -3 }}
-                        whileTap={{ scale: 0.95 }}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.3 + i * 0.1 }}
-                      >
-                        {social.icon}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Map */}
-                <motion.div
-                  className="rounded-2xl overflow-hidden border border-border bg-card"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                >
-                  <div className="relative h-64 bg-muted">
-                    {/* Styled map placeholder with circuit theme */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <svg className="w-full h-full opacity-20" viewBox="0 0 400 200">
-                        {/* Grid */}
-                        {[...Array(20)].map((_, i) => (
-                          <line
-                            key={`v-${i}`}
-                            x1={i * 20}
-                            y1="0"
-                            x2={i * 20}
-                            y2="200"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth="0.5"
-                          />
-                        ))}
-                        {[...Array(10)].map((_, i) => (
-                          <line
-                            key={`h-${i}`}
-                            x1="0"
-                            y1={i * 20}
-                            x2="400"
-                            y2={i * 20}
-                            stroke="hsl(var(--primary))"
-                            strokeWidth="0.5"
-                          />
-                        ))}
-                      </svg>
-                    </div>
-                    
-                    {/* Location pin */}
-                    <motion.div
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                      animate={{
-                        y: [0, -10, 0],
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <div className="relative">
-                        <MapPin className="w-12 h-12 text-primary" fill="hsl(var(--primary))" />
-                        <motion.div
-                          className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-16 h-4 rounded-full bg-primary/20"
-                          animate={{
-                            scale: [1, 1.2, 1],
-                            opacity: [0.3, 0.1, 0.3],
-                          }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        />
-                      </div>
-                    </motion.div>
-
-                    {/* Circuit traces */}
-                    <svg className="absolute inset-0 w-full h-full">
-                      {[0, 1, 2].map((i) => (
-                        <motion.circle
-                          key={i}
-                          r="2"
-                          fill="hsl(var(--primary))"
-                          animate={{
-                            cx: ["20%", "50%", "80%", "50%", "20%"],
-                            cy: ["30%", "50%", "70%", "50%", "30%"],
-                          }}
-                          transition={{
-                            duration: 8,
-                            repeat: Infinity,
-                            delay: i * 2,
-                          }}
-                        />
-                      ))}
-                    </svg>
-
-                    {/* Label */}
-                    <div className="absolute bottom-4 left-4 right-4 bg-card/90 backdrop-blur-sm rounded-lg p-3 border border-border">
-                      <p className="font-orbitron text-sm font-semibold">IoTRONICS Lab</p>
-                      <p className="font-rajdhani text-xs text-muted-foreground">Engineering Block, Room 302</p>
-                    </div>
-                  </div>
-                </motion.div>
               </motion.div>
+
 
               {/* Contact form */}
               <motion.div
@@ -288,6 +193,38 @@ const Contact = () => {
                     </motion.button>
                   </div>
                 </form>
+                {/* Social links */}
+<div className="mb-12">
+  <h4 className="font-orbitron text-lg font-semibold mb-4">Follow Us</h4>
+  <div className="flex gap-4">
+    <motion.a
+      href="https://www.instagram.com/iotronics.nmit/"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+    >
+      <Instagram size={20} />
+    </motion.a>
+
+    <motion.a
+      href="https://linkedin.com/company/iotronics-nmit"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+    >
+      <Linkedin size={20} />
+    </motion.a>
+
+    <motion.a
+      href="https://github.com/iotronicsnmit"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+    >
+      <Github size={20} />
+    </motion.a>
+  </div>
+</div>
               </motion.div>
             </div>
           </div>
