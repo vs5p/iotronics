@@ -109,10 +109,11 @@ const Contact = () => {
   viewport={{ once: true }}
 >
   <iframe
-    title="EEE Dept NMIT"
-    src="https://www.google.com/maps?q=F%20Block%20EEE%20Dept%20NMIT&output=embed"
+    src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3885.553485371134!2d77.58374407507914!3d13.127448987202458!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTPCsDA3JzM4LjgiTiA3N8KwMzUnMTAuOCJF!5e0!3m2!1sen!2sin!4v1769427856673!5m2!1sen!2sin"
     className="w-full h-96 border-0"
     loading="lazy"
+    referrerPolicy="no-referrer-when-downgrade"
+    allowFullScreen
   />
 </motion.div>
 
