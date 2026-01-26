@@ -7,7 +7,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables');
   console.error('VITE_SUPABASE_URL:', supabaseUrl);
   console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey);
-  throw new Error('Missing Supabase environment variables. Check your .env file.');
+  // throw new Error('Missing Supabase environment variables. Check your .env file.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -79,6 +79,13 @@ export const addProject = async (projectData: any) => {
 };
 
 export const updateProject = async (projectId: string, projectData: any) => {
+  // Get old image to check for changes
+  const { data: oldData } = await supabase
+    .from('projects')
+    .select('image')
+    .eq('id', projectId)
+    .single();
+
   const { data, error } = await supabase
     .from('projects')
     .update({ ...projectData, updated_at: new Date().toISOString() })
@@ -87,10 +94,27 @@ export const updateProject = async (projectId: string, projectData: any) => {
     .single();
 
   if (error) throw error;
+
+  // Delete old image if it changed
+  if (oldData?.image && oldData.image !== projectData.image) {
+    await deleteFileFromUrl(oldData.image);
+  }
+
   return data;
 };
 
 export const deleteProject = async (projectId: string) => {
+  // Get image url before deleting
+  const { data } = await supabase
+    .from('projects')
+    .select('image')
+    .eq('id', projectId)
+    .single();
+
+  if (data?.image) {
+    await deleteFileFromUrl(data.image);
+  }
+
   const { error } = await supabase
     .from('projects')
     .delete()
@@ -139,6 +163,12 @@ export const addNews = async (newsData: any) => {
 };
 
 export const updateNews = async (newsId: string, newsData: any) => {
+  const { data: oldData } = await supabase
+    .from('news')
+    .select('image')
+    .eq('id', newsId)
+    .single();
+
   const { data, error } = await supabase
     .from('news')
     .update({ ...newsData, updated_at: new Date().toISOString() })
@@ -147,10 +177,25 @@ export const updateNews = async (newsId: string, newsData: any) => {
     .single();
 
   if (error) throw error;
+
+  if (oldData?.image && oldData.image !== newsData.image) {
+    await deleteFileFromUrl(oldData.image);
+  }
+
   return data;
 };
 
 export const deleteNews = async (newsId: string) => {
+  const { data } = await supabase
+    .from('news')
+    .select('image')
+    .eq('id', newsId)
+    .single();
+
+  if (data?.image) {
+    await deleteFileFromUrl(data.image);
+  }
+
   const { error } = await supabase
     .from('news')
     .delete()
@@ -296,7 +341,40 @@ export const addEvent = async (event: any) => {
   return data;
 };
 
+export const updateEvent = async (id: string, event: any) => {
+  const { data: oldData } = await supabase
+    .from('events')
+    .select('banner')
+    .eq('id', id)
+    .single();
+
+  const { data, error } = await supabase
+    .from('events')
+    .update(event)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  if (oldData?.banner && oldData.banner !== event.banner) {
+    await deleteFileFromUrl(oldData.banner);
+  }
+
+  return data;
+};
+
 export const deleteEvent = async (id: string) => {
+  const { data } = await supabase
+    .from('events')
+    .select('banner')
+    .eq('id', id)
+    .single();
+
+  if (data?.banner) {
+    await deleteFileFromUrl(data.banner);
+  }
+
   const { error } = await supabase
     .from('events')
     .delete()
@@ -345,3 +423,56 @@ export const markMessageRead = async (id: string) => {
   if (error) throw error;
 };
 
+// File Upload Functions
+export const deleteFileFromUrl = async (url: string) => {
+  if (!url) return;
+  // Basic check if it likely belongs to Supabase or is relative
+  if (!url.includes('storage/v1/object/public')) return;
+
+  try {
+    // URL format: .../storage/v1/object/public/{bucket}/{folder}/{file}
+    const parts = url.split('/storage/v1/object/public/');
+    if (parts.length < 2) return;
+
+    const pathPart = parts[1]; // {bucket}/{folder}/{file}
+    const firstSlash = pathPart.indexOf('/');
+
+    if (firstSlash === -1) return;
+
+    const bucket = pathPart.substring(0, firstSlash);
+    const path = pathPart.substring(firstSlash + 1);
+
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove([decodeURIComponent(path)]);
+
+    if (error) {
+      console.error("Error deleting file from storage:", error);
+    }
+  } catch (err) {
+    console.error("Exception deleting file:", err);
+  }
+};
+
+// File Upload Functions
+// File Upload Functions
+export const uploadImage = async (file: File, bucketName: string = 'images') => {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+  const filePath = fileName; // Upload directly to bucket root or specific folder if needed, but not repeating bucketName
+
+  const { error: uploadError } = await supabase.storage
+    .from(bucketName)
+    .upload(filePath, file);
+
+  if (uploadError) {
+    console.error(`Error uploading to bucket '${bucketName}':`, uploadError);
+    throw uploadError;
+  }
+
+  const { data } = supabase.storage
+    .from(bucketName)
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
+};

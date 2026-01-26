@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, Edit2, LogOut, GripVertical, Download, ChevronDown } from "lucide-react";
+import { Trash2, Edit2, LogOut, GripVertical, Download, ChevronDown, LayoutDashboard, Lightbulb, Newspaper, Users, FileSignature, Calendar, MessageSquare } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -78,6 +78,7 @@ import {
   updateProposalStatus,
   getEvents,
   addEvent,
+  updateEvent,
   deleteEvent,
   getMessages,
   deleteMessage,
@@ -86,6 +87,7 @@ import {
   onAuthChange,
   updateProjectsOrder,
   updateNewsOrder,
+  uploadImage,
 } from "@/lib/supabase";
 
 interface Project {
@@ -169,6 +171,7 @@ const Admin = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Projects
   const [projects, setProjects] = useState<Project[]>([]);
@@ -198,6 +201,7 @@ const Admin = () => {
     registration_link: "",
     banner: "",
   });
+  const [editingEvent, setEditingEvent] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [adminName, setAdminName] = useState("");
   const [showNameDialog, setShowNameDialog] = useState(false);
@@ -215,8 +219,13 @@ const Admin = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Drag and drop sensors - MUST be before any conditional returns (React Hooks rule)
+  // Drag and drop sensors
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -641,9 +650,15 @@ const Admin = () => {
     }
     setSubmitting(true);
     try {
-      await addEvent(eventForm);
-      toast.success("Event added successfully");
+      if (editingEvent) {
+        await updateEvent(editingEvent.id, eventForm);
+        toast.success("Event updated successfully");
+      } else {
+        await addEvent(eventForm);
+        toast.success("Event added successfully");
+      }
       setEventForm({ title: "", date: "", time: "", location: "", description: "", registration_link: "", banner: "" });
+      setEditingEvent(null);
       const data = await getEvents();
       setEvents(data);
     } catch (error: any) {
@@ -662,6 +677,24 @@ const Admin = () => {
     } catch (e) {
       toast.error("Failed to delete event");
     }
+  };
+
+  const handleEditEvent = (event: any) => {
+    setEditingEvent(event);
+    setEventForm({
+      title: event.title,
+      date: event.date,
+      time: event.time || "",
+      location: event.location || "",
+      description: event.description || "",
+      registration_link: event.registration_link || "",
+      banner: event.banner || "",
+    });
+  };
+
+  const clearEventForm = () => {
+    setEventForm({ title: "", date: "", time: "", location: "", description: "", registration_link: "", banner: "" });
+    setEditingEvent(null);
   };
 
   const handleDeleteMessage = async (id: string) => {
@@ -715,48 +748,245 @@ const Admin = () => {
     toast.success("Subscribers list exported successfully");
   };
 
+  // File Upload Handlers
+  const handleProjectImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setSubmitting(true);
+      const url = await uploadImage(file, "project-images");
+      setProjectForm({ ...projectForm, image: url });
+      toast.success("Project image uploaded successfully");
+    } catch (error: any) {
+      toast.error(`Failed to upload project image: ${error.message || "Unknown error"}`);
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleNewsImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setSubmitting(true);
+      const url = await uploadImage(file, "news-images");
+      setNewsForm({ ...newsForm, image: url });
+      toast.success("News image uploaded successfully");
+    } catch (error: any) {
+      toast.error(`Failed to upload news image: ${error.message || "Unknown error"}`);
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEventBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setSubmitting(true);
+      const url = await uploadImage(file, "event-banners");
+      setEventForm({ ...eventForm, banner: url } as any);
+      toast.success("Event banner uploaded successfully");
+    } catch (error: any) {
+      toast.error(`Failed to upload event banner: ${error.message || "Unknown error"}`);
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className={`min-h-screen transition-colors ${isDarkMode ? "bg-black text-white" : "bg-white text-black"}`}>
       <HangingBulb isOn={!isDarkMode} onToggle={() => setIsDarkMode(!isDarkMode)} />
-      <Navigation />
+      <Navigation isAdmin={true} onTabChange={setActiveTab} />
 
-      <main className="relative pt-24 pb-16">
+      <main className="relative pt-20 sm:pt-24 pb-12 sm:pb-16">
         <div className="container mx-auto px-4">
           <motion.div
-            className="mb-12 flex justify-between items-start"
+            className="mb-8 sm:mb-12 flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-0"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <div>
-              <h1 className="font-orbitron text-4xl md:text-5xl font-bold mb-2">Admin Dashboard</h1>
-              <p className="font-rajdhani text-lg text-muted-foreground">
+              <h1 className="font-orbitron text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-1 sm:mb-2">Admin Dashboard</h1>
+              <p className="font-rajdhani text-xs sm:text-sm md:text-lg text-muted-foreground">
                 {adminName ? `Welcome back, ${adminName}` : "Manage projects and news for your IoTRONICS website"}
               </p>
             </div>
-            <Button onClick={handleLogout} variant="destructive" className="gap-2">
+            <Button onClick={handleLogout} variant="destructive" className="gap-2 w-full sm:w-auto text-xs sm:text-sm">
               <LogOut className="w-4 h-4" />
-              Logout ({user?.email})
+              <span className="hidden sm:inline">Logout ({user?.email})</span>
+              <span className="sm:hidden">Logout</span>
             </Button>
           </motion.div>
-
-          <Tabs defaultValue="projects" className="w-full">
-            <TabsList className="grid w-full max-w-5xl grid-cols-6 h-auto gap-2 bg-muted/50 p-2 mb-8">
-              <TabsTrigger value="projects" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-lg py-3 transition-all uppercase tracking-wide">Projects</TabsTrigger>
-              <TabsTrigger value="news" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-lg py-3 transition-all uppercase tracking-wide">News</TabsTrigger>
-              <TabsTrigger value="subscribers" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-lg py-3 transition-all uppercase tracking-wide hidden md:inline-flex">Newsletter</TabsTrigger>
-              <TabsTrigger value="subscribers" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-lg py-3 transition-all uppercase tracking-wide md:hidden">Subs</TabsTrigger>
-              <TabsTrigger value="proposals" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-lg py-3 transition-all uppercase tracking-wide hidden md:inline-flex">Proposals</TabsTrigger>
-              <TabsTrigger value="proposals" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-lg py-3 transition-all uppercase tracking-wide md:hidden">Props</TabsTrigger>
-              <TabsTrigger value="events" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-lg py-3 transition-all uppercase tracking-wide">Events</TabsTrigger>
-              <TabsTrigger value="messages" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-lg py-3 transition-all uppercase tracking-wide">Messages</TabsTrigger>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="hidden lg:flex w-full h-auto gap-2 bg-muted/50 p-2 mb-6 sm:mb-8 overflow-x-auto">
+              <TabsTrigger value="overview" className="flex-1 data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-sm md:text-lg py-2 sm:py-3 transition-all uppercase tracking-wide whitespace-nowrap gap-2">
+                <LayoutDashboard className="w-4 h-4" /> Overview
+              </TabsTrigger>
+              <TabsTrigger value="projects" className="flex-1 data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-sm md:text-lg py-2 sm:py-3 transition-all uppercase tracking-wide whitespace-nowrap gap-2">
+                <Lightbulb className="w-4 h-4" /> Projects
+              </TabsTrigger>
+              <TabsTrigger value="news" className="flex-1 data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-sm md:text-lg py-2 sm:py-3 transition-all uppercase tracking-wide whitespace-nowrap gap-2">
+                <Newspaper className="w-4 h-4" /> News
+              </TabsTrigger>
+              <TabsTrigger value="subscribers" className="flex-1 data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-sm md:text-lg py-2 sm:py-3 transition-all uppercase tracking-wide whitespace-nowrap gap-2">
+                <Users className="w-4 h-4" /> Newsletter
+              </TabsTrigger>
+              <TabsTrigger value="proposals" className="flex-1 data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-sm md:text-lg py-2 sm:py-3 transition-all uppercase tracking-wide whitespace-nowrap gap-2">
+                <FileSignature className="w-4 h-4" /> Proposals
+              </TabsTrigger>
+              <TabsTrigger value="events" className="flex-1 data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-sm md:text-lg py-2 sm:py-3 transition-all uppercase tracking-wide whitespace-nowrap gap-2">
+                <Calendar className="w-4 h-4" /> Events
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-orange-600 data-[state=active]:text-white font-bold text-sm md:text-lg py-2 sm:py-3 transition-all uppercase tracking-wide whitespace-nowrap gap-2">
+                <MessageSquare className="w-4 h-4" /> Messages
+              </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Stats Cards */}
+                <Card className="hover:border-primary/50 transition-colors group">
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Total Projects</CardTitle>
+                    <Lightbulb className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-extrabold text-foreground">{projects.length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {projects.filter(p => p.status === 'Completed').length} Completed • {projects.filter(p => p.status === 'In Progress').length} In Progress
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:border-primary/50 transition-colors group">
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">News Items</CardTitle>
+                    <Newspaper className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-extrabold text-foreground">{news.length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {news.filter(n => n.type === 'event').length} Events • {news.filter(n => n.type === 'blog').length} Blog Posts
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:border-primary/50 transition-colors group">
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Newsletter Subscribers</CardTitle>
+                    <Users className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-extrabold text-foreground">{subscribers.length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Active subscribers</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:border-primary/50 transition-colors group">
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Proposals</CardTitle>
+                    <FileSignature className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-extrabold text-foreground">{proposals.length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {proposals.filter(p => p.status === 'Pending' || !p.status).length} Pending Review
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:border-primary/50 transition-colors group">
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Upcoming Events</CardTitle>
+                    <Calendar className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-extrabold text-foreground">{events.length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Scheduled events</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:border-primary/50 transition-colors group">
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Messages</CardTitle>
+                    <MessageSquare className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-extrabold text-foreground">{messages.length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Inquiries received</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Activity / At a Glance */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle className="text-xl">Latest Proposals</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {proposals.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No proposals yet.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {proposals.slice(0, 3).map((p) => (
+                          <div key={p.id} className="flex flex-col border-b border-border/50 last:border-0 pb-3 last:pb-0">
+                            <div className="flex justify-between items-start">
+                              <span className="font-semibold">{p.title}</span>
+                              <Badge variant="outline" className={`text-xs ${getStatusColor(p.status)}`}>{p.status || 'Pending'}</Badge>
+                            </div>
+                            <span className="text-xs text-muted-foreground">by {p.name} • {new Date(p.created_at).toLocaleDateString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {proposals.length > 3 && (
+                      <Button variant="link" onClick={() => setActiveTab('proposals')} className="px-0 mt-2 h-auto text-primary">View all proposals &rarr;</Button>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle className="text-xl">Recent Messages</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {messages.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No messages yet.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {messages.slice(0, 3).map((m) => (
+                          <div key={m.id} className="flex flex-col border-b border-border/50 last:border-0 pb-3 last:pb-0">
+                            <div className="flex justify-between items-start">
+                              <span className="font-semibold truncate max-w-[200px]">{m.subject || 'No Subject'}</span>
+                              <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground truncate">{m.name} ({m.email})</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {messages.length > 3 && (
+                      <Button variant="link" onClick={() => setActiveTab('messages')} className="px-0 mt-2 h-auto text-primary">View all messages &rarr;</Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
             {/* Projects Tab */}
-            <TabsContent value="projects" className="space-y-6">
-              <div className="grid md:grid-cols-3 gap-6">
+            <TabsContent value="projects" className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 <Card className="md:col-span-1">
                   <CardHeader>
-                    <CardTitle className="text-2xl font-extrabold uppercase tracking-widest text-primary">{editingProject ? "Edit Project" : "Add Project"}</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl md:text-2xl font-extrabold uppercase tracking-widest text-primary">{editingProject ? "Edit Project" : "Add Project"}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleAddProject} className="space-y-4">
@@ -783,11 +1013,36 @@ const Admin = () => {
                           />
                         </div>
                       )}
-                      <Input
-                        placeholder="Image URL (e.g., https://example.com/image.jpg)"
-                        value={projectForm.image}
-                        onChange={(e) => setProjectForm({ ...projectForm, image: e.target.value })}
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Image URL (e.g., https://example.com/image.jpg)"
+                          value={projectForm.image}
+                          onChange={(e) => setProjectForm({ ...projectForm, image: e.target.value })}
+                          className="flex-1"
+                        />
+                        <label className="flex items-center">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleProjectImageUpload}
+                            className="hidden"
+                            disabled={submitting}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 cursor-pointer"
+                            disabled={submitting}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              (e.currentTarget.previousElementSibling as HTMLInputElement)?.click();
+                            }}
+                          >
+                            {submitting ? "Uploading..." : "Upload"}
+                          </Button>
+                        </label>
+                      </div>
                       <Input
                         placeholder="Icon (emoji)"
                         value={projectForm.icon}
@@ -835,8 +1090,8 @@ const Admin = () => {
                   </CardContent>
                 </Card>
 
-                <div className="md:col-span-2 space-y-4">
-                  <h3 className="font-bold text-lg">Projects ({projects.length})</h3>
+                <div className="md:col-span-2 space-y-3 sm:space-y-4">
+                  <h3 className="font-bold text-base sm:text-lg">Projects ({projects.length})</h3>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -846,7 +1101,7 @@ const Admin = () => {
                       items={projects.map(p => p.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                      <div className="space-y-2 sm:space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto">
                         {projects.length === 0 ? (
                           <p className="text-muted-foreground">No projects yet</p>
                         ) : (
@@ -867,18 +1122,18 @@ const Admin = () => {
                                           <h4 className="font-extrabold text-2xl tracking-wide text-foreground">
                                             {project.icon} {project.title}
                                           </h4>
-                                          <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
+                                          <p className="text-xs sm:text-sm text-muted-foreground mt-1">{project.description}</p>
                                           <div className="flex gap-2 mt-2 flex-wrap">
-                                            <Badge variant="outline">{project.status}</Badge>
+                                            <Badge variant="outline" className="text-xs sm:text-sm">{project.status}</Badge>
                                             {project.tags.map((tag) => (
-                                              <Badge key={tag} variant="secondary">
+                                              <Badge key={tag} variant="secondary" className="text-xs sm:text-sm">
                                                 {tag}
                                               </Badge>
                                             ))}
                                           </div>
                                         </div>
                                       </div>
-                                      <div className="flex gap-2 ml-2">
+                                      <div className="flex gap-1 ml-2 flex-shrink-0">
                                         <Button
                                           size="sm"
                                           variant="outline"
@@ -938,11 +1193,11 @@ const Admin = () => {
             </TabsContent>
 
             {/* News Tab */}
-            <TabsContent value="news" className="space-y-6">
-              <div className="grid md:grid-cols-3 gap-6">
+            <TabsContent value="news" className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 <Card className="md:col-span-1">
                   <CardHeader>
-                    <CardTitle className="text-2xl font-extrabold uppercase tracking-widest text-primary">{editingNews ? "Edit News" : "Add News"}</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl md:text-2xl font-extrabold uppercase tracking-widest text-primary">{editingNews ? "Edit News" : "Add News"}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleAddNews} className="space-y-4">
@@ -991,11 +1246,36 @@ const Admin = () => {
                           />
                         </div>
                       )}
-                      <Input
-                        placeholder="Image URL"
-                        value={newsForm.image}
-                        onChange={(e) => setNewsForm({ ...newsForm, image: e.target.value })}
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Image URL"
+                          value={newsForm.image}
+                          onChange={(e) => setNewsForm({ ...newsForm, image: e.target.value })}
+                          className="flex-1"
+                        />
+                        <label className="flex items-center">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleNewsImageUpload}
+                            className="hidden"
+                            disabled={submitting}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 cursor-pointer"
+                            disabled={submitting}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              (e.currentTarget.previousElementSibling as HTMLInputElement)?.click();
+                            }}
+                          >
+                            {submitting ? "Uploading..." : "Upload"}
+                          </Button>
+                        </label>
+                      </div>
                       <div className="flex gap-2">
                         <Button type="submit" disabled={submitting} className="flex-1">
                           {submitting ? "Saving..." : editingNews ? "Update" : "Add"}
@@ -1010,8 +1290,8 @@ const Admin = () => {
                   </CardContent>
                 </Card>
 
-                <div className="md:col-span-2 space-y-4">
-                  <h3 className="font-bold text-lg">News Items ({news.length})</h3>
+                <div className="md:col-span-2 space-y-3 sm:space-y-4">
+                  <h3 className="font-bold text-base sm:text-lg">News Items ({news.length})</h3>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1021,7 +1301,7 @@ const Admin = () => {
                       items={news.map(n => n.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                      <div className="space-y-2 sm:space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto">
                         {news.length === 0 ? (
                           <p className="text-muted-foreground">No news items yet</p>
                         ) : (
@@ -1030,67 +1310,67 @@ const Admin = () => {
                               {(listeners) => (
                                 <Card>
                                   <CardContent className="pt-4">
-                                    <div className="flex justify-between items-start">
-                                      <div className="flex items-start gap-2 flex-1">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0">
+                                      <div className="flex items-start gap-2 flex-1 min-w-0">
                                         <button
-                                          className="cursor-grab active:cursor-grabbing mt-1 text-muted-foreground hover:text-foreground transition-colors"
+                                          className="cursor-grab active:cursor-grabbing mt-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
                                           {...listeners}
                                         >
-                                          <GripVertical className="w-5 h-5" />
+                                          <GripVertical className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </button>
-                                        <div className="flex-1">
-                                          <h4 className="font-extrabold text-2xl tracking-wide text-foreground">
+                                        <div className="flex-1 min-w-0">
+                                          <h4 className="font-extrabold text-base sm:text-xl md:text-2xl tracking-wide text-foreground break-words">
                                             {item.icon} {item.title}
                                           </h4>
-                                          <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                                          <div className="flex gap-2 mt-2">
-                                            <Badge variant="outline">{item.date}</Badge>
-                                            <Badge variant="secondary">{item.type}</Badge>
+                                          <p className="text-xs sm:text-sm text-muted-foreground mt-1">{item.description}</p>
+                                          <div className="flex gap-2 mt-2 flex-wrap">
+                                            <Badge variant="outline" className="text-xs sm:text-sm">{item.date}</Badge>
+                                            <Badge variant="secondary" className="text-xs sm:text-sm">{item.type}</Badge>
                                           </div>
                                         </div>
-                                        <div className="flex gap-2 ml-2">
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => {
-                                              setEditingNews(item);
-                                              setNewsForm({
-                                                title: item.title,
-                                                description: item.description,
-                                                date: item.date,
-                                                type: item.type,
-                                                icon: item.icon,
-                                                image: item.image,
-                                              });
-                                            }}
-                                          >
-                                            <Edit2 className="w-4 h-4" />
-                                          </Button>
-                                          <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                              <Button size="sm" variant="destructive">
-                                                <Trash2 className="w-4 h-4" />
-                                              </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                              <AlertDialogHeader>
-                                                <AlertDialogTitle>Delete News</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                  Are you sure? This cannot be undone.
-                                                </AlertDialogDescription>
-                                              </AlertDialogHeader>
-                                              <div className="flex gap-2 justify-end">
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction
-                                                  onClick={() => handleDeleteNews(item.id)}
-                                                  className="bg-red-600 hover:bg-red-700"
-                                                >
-                                                  Delete
-                                                </AlertDialogAction>
-                                              </div>
-                                            </AlertDialogContent>
-                                          </AlertDialog>
-                                        </div>
+                                      </div>
+                                      <div className="flex gap-1 ml-2 flex-shrink-0">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setEditingNews(item);
+                                            setNewsForm({
+                                              title: item.title,
+                                              description: item.description,
+                                              date: item.date,
+                                              type: item.type,
+                                              icon: item.icon,
+                                              image: item.image,
+                                            });
+                                          }}
+                                        >
+                                          <Edit2 className="w-4 h-4" />
+                                        </Button>
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button size="sm" variant="destructive">
+                                              <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Delete News</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Are you sure? This cannot be undone.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <div className="flex gap-2 justify-end">
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                onClick={() => handleDeleteNews(item.id)}
+                                                className="bg-red-600 hover:bg-red-700"
+                                              >
+                                                Delete
+                                              </AlertDialogAction>
+                                            </div>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
                                       </div>
                                     </div>
                                   </CardContent>
@@ -1105,38 +1385,38 @@ const Admin = () => {
                 </div>
               </div>
             </TabsContent>
-            <TabsContent value="subscribers">
+            <TabsContent value="subscribers" className="space-y-4 sm:space-y-6">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Newsletter Subscribers ({subscribers.length})</CardTitle>
-                    <Button onClick={handleExportCSV} variant="outline" size="sm" className="gap-2">
-                      <Download className="w-4 h-4" />
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                    <CardTitle className="text-lg sm:text-xl md:text-2xl">Newsletter Subscribers ({subscribers.length})</CardTitle>
+                    <Button onClick={handleExportCSV} variant="outline" size="sm" className="gap-2 text-xs sm:text-sm w-full sm:w-auto">
+                      <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                       Export CSV
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {subscribers.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
+                    <div className="text-center py-8 sm:py-12 text-muted-foreground text-sm sm:text-base">
                       No subscribers yet.
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-2 sm:space-y-4">
                       {subscribers.map((subscriber) => (
                         <div
                           key={subscriber.id}
-                          className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border"
+                          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 sm:p-4 rounded-lg bg-muted/50 border border-border"
                         >
-                          <div>
-                            <div className="font-semibold">{subscriber.email}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm sm:text-base break-all">{subscriber.email}</div>
                             <div className="text-xs text-muted-foreground">
                               {new Date(subscriber.created_at).toLocaleDateString()} at {new Date(subscriber.created_at).toLocaleTimeString()}
                             </div>
                           </div>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -1173,41 +1453,41 @@ const Admin = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="proposals">
+            <TabsContent value="proposals" className="space-y-4 sm:space-y-6">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Project Proposals ({proposals.length})</CardTitle>
-                    <Button onClick={handleExportProposalsCSV} variant="outline" size="sm" className="gap-2">
-                      <Download className="w-4 h-4" />
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                    <CardTitle className="text-lg sm:text-xl md:text-2xl">Project Proposals ({proposals.length})</CardTitle>
+                    <Button onClick={handleExportProposalsCSV} variant="outline" size="sm" className="gap-2 text-xs sm:text-sm w-full sm:w-auto">
+                      <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                       Export CSV
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {proposals.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
+                    <div className="text-center py-8 sm:py-12 text-muted-foreground text-sm sm:text-base">
                       No proposals yet.
                     </div>
                   ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                       {proposals.map((prop) => (
                         <div key={prop.id} className="border border-border rounded-lg bg-muted/20 overflow-hidden">
-                          <div className="p-4 border-b border-border bg-muted/30 flex justify-between items-start">
-                            <div>
-                              <h4 className="font-orbitron font-semibold text-lg">{prop.title}</h4>
-                              <div className="text-sm text-muted-foreground mt-1">
+                          <div className="p-3 sm:p-4 border-b border-border bg-muted/30 flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-orbitron font-semibold text-base sm:text-lg break-words">{prop.title}</h4>
+                              <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                                 <span className="text-primary font-bold">{prop.name}</span> • {prop.email}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-xs text-muted-foreground mr-2">
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <div className="text-xs text-muted-foreground">
                                 {new Date(prop.created_at).toLocaleDateString()}
                               </div>
 
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm" className={`h-8 border capitalize ${getStatusColor(prop.status || 'Pending')}`}>
+                                  <Button variant="outline" size="sm" className={`h-8 border capitalize text-xs sm:text-sm ${getStatusColor(prop.status || 'Pending')}`}>
                                     {prop.status || 'Pending'}
                                     <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
                                   </Button>
@@ -1267,142 +1547,178 @@ const Admin = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="events">
-              <div className="grid gap-8">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Add New Event</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleAddEvent} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input
-                          placeholder="Event Title"
-                          value={eventForm.title}
-                          onChange={e => setEventForm({ ...eventForm, title: e.target.value })}
-                          required
-                        />
-                        <Input
-                          type="date"
-                          value={eventForm.date}
-                          onChange={e => setEventForm({ ...eventForm, date: e.target.value })}
-                          required
-                        />
-                        <Input
-                          placeholder="Time (e.g. 10:00 AM)"
-                          value={eventForm.time}
-                          onChange={e => setEventForm({ ...eventForm, time: e.target.value })}
-                        />
-                        <Input
-                          placeholder="Location"
-                          value={eventForm.location}
-                          onChange={e => setEventForm({ ...eventForm, location: e.target.value })}
-                        />
-                        <Input
-                          placeholder="Registration Link (Optional)"
-                          value={eventForm.registration_link}
-                          onChange={e => setEventForm({ ...eventForm, registration_link: e.target.value })}
-                          className="md:col-span-2"
-                        />
+            <TabsContent value="events" className="space-y-4 sm:space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl">{editingEvent ? "Edit Event" : "Add New Event"}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleAddEvent} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                      <Input
+                        placeholder="Event Title"
+                        value={eventForm.title}
+                        onChange={e => setEventForm({ ...eventForm, title: e.target.value })}
+                        required
+                        className="text-sm"
+                      />
+                      <Input
+                        type="date"
+                        value={eventForm.date}
+                        onChange={e => setEventForm({ ...eventForm, date: e.target.value })}
+                        required
+                        className="text-sm"
+                      />
+                      <Input
+                        placeholder="Time (e.g. 10:00 AM)"
+                        value={eventForm.time}
+                        onChange={e => setEventForm({ ...eventForm, time: e.target.value })}
+                        className="text-sm"
+                      />
+                      <Input
+                        placeholder="Location"
+                        value={eventForm.location}
+                        onChange={e => setEventForm({ ...eventForm, location: e.target.value })}
+                        className="text-sm"
+                      />
+                      <Input
+                        placeholder="Registration Link (Optional)"
+                        value={eventForm.registration_link}
+                        onChange={e => setEventForm({ ...eventForm, registration_link: e.target.value })}
+                        className="md:col-span-2 text-sm"
+                      />
+                      <div className="md:col-span-2 flex gap-2">
                         <Input
                           placeholder="Banner Image URL"
                           value={(eventForm as any).banner || ""}
                           onChange={e => setEventForm({ ...eventForm, banner: e.target.value } as any)}
-                          className="md:col-span-2"
+                          className="flex-1 text-sm"
                         />
-                        {/* Banner Preview */}
-                        {(eventForm as any).banner && (
-                          <div className="md:col-span-2 relative h-48 rounded-lg overflow-hidden border border-border">
-                            <img
-                              src={(eventForm as any).banner}
-                              alt="Banner Preview"
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://placehold.co/600x400?text=Invalid+Image+URL";
-                              }}
-                            />
-                          </div>
-                        )}
-                        <Textarea
-                          placeholder="Event Description"
-                          value={eventForm.description}
-                          onChange={e => setEventForm({ ...eventForm, description: e.target.value })}
-                          className="md:col-span-2"
-                        />
+                        <label className="flex items-center">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleEventBannerUpload}
+                            className="hidden"
+                            disabled={submitting}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 cursor-pointer"
+                            disabled={submitting}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              (e.currentTarget.previousElementSibling as HTMLInputElement)?.click();
+                            }}
+                          >
+                            {submitting ? "Uploading..." : "Upload"}
+                          </Button>
+                        </label>
                       </div>
-                      <Button type="submit" disabled={submitting}>
-                        {submitting ? "Adding..." : "Add Event"}
+                      {/* Banner Preview */}
+                      {(eventForm as any).banner && (
+                        <div className="md:col-span-2 relative h-32 sm:h-48 rounded-lg overflow-hidden border border-border">
+                          <img
+                            src={(eventForm as any).banner}
+                            alt="Banner Preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://placehold.co/600x400?text=Invalid+Image+URL";
+                            }}
+                          />
+                        </div>
+                      )}
+                      <Textarea
+                        placeholder="Event Description"
+                        value={eventForm.description}
+                        onChange={e => setEventForm({ ...eventForm, description: e.target.value })}
+                        className="md:col-span-2 text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" disabled={submitting} className="text-sm">
+                        {submitting ? (editingEvent ? "Updating..." : "Adding...") : (editingEvent ? "Update Event" : "Add Event")}
                       </Button>
-                    </form>
-                  </CardContent>
-                </Card>
+                      {editingEvent && (
+                        <Button type="button" variant="outline" onClick={clearEventForm} className="text-sm">
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Upcoming Events ({events.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {events.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">No events scheduled.</div>
-                    ) : (
-                      <div className="space-y-4">
-                        {events.map((event) => (
-                          <div key={event.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-muted/20 gap-4">
-                            <div>
-                              <h4 className="font-extrabold text-2xl tracking-wide">{event.title}</h4>
-                              <div className="text-sm text-muted-foreground flex gap-4">
-                                <span>{new Date(event.date).toLocaleDateString()} {event.time}</span>
-                                <span>{event.location}</span>
-                              </div>
-                              <p className="text-sm mt-1 max-w-xl">{event.description}</p>
-                            </div>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm" className="gap-2">
-                                  <Trash2 className="w-4 h-4" /> Delete
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Event?</AlertDialogTitle>
-                                  <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <div className="flex justify-end gap-2 mt-4">
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteEvent(event.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                </div>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="messages">
               <Card>
                 <CardHeader>
-                  <CardTitle>Inquiries & Messages ({messages.length})</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl">Upcoming Events ({events.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {events.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">No events scheduled.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {events.map((event) => (
+                        <div key={event.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-muted/20 gap-4">
+                          <div>
+                            <h4 className="font-extrabold text-2xl tracking-wide">{event.title}</h4>
+                            <div className="text-sm text-muted-foreground flex gap-4">
+                              <span>{new Date(event.date).toLocaleDateString()} {event.time}</span>
+                              <span>{event.location}</span>
+                            </div>
+                            <p className="text-sm mt-1 max-w-xl">{event.description}</p>
+                          </div>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm" className="gap-2">
+                                <Trash2 className="w-4 h-4" /> Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Event?</AlertDialogTitle>
+                                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <div className="flex justify-end gap-2 mt-4">
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteEvent(event.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                              </div>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                          <Button variant="outline" size="sm" className="gap-2" onClick={() => handleEditEvent(event)}>
+                            <Edit2 className="w-4 h-4" /> Edit
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="messages" className="space-y-4 sm:space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl">Inquiries & Messages ({messages.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {messages.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">No messages received.</div>
+                    <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm sm:text-base">No messages received.</div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {messages.map(msg => (
-                        <div key={msg.id} className="p-4 bg-muted/20 border border-border rounded-lg">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h4 className="font-extrabold text-2xl font-orbitron tracking-wide">{msg.subject || 'No Subject'}</h4>
-                              <p className="text-sm text-primary font-semibold">{msg.name} <span className="text-muted-foreground font-normal">({msg.email})</span></p>
+                        <div key={msg.id} className="p-3 sm:p-4 bg-muted/20 border border-border rounded-lg">
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0 mb-2 sm:mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-extrabold text-lg sm:text-2xl font-orbitron tracking-wide break-words">{msg.subject || 'No Subject'}</h4>
+                              <p className="text-xs sm:text-sm text-primary font-semibold break-all">{msg.name} <span className="text-muted-foreground font-normal">({msg.email})</span></p>
                               <p className="text-xs text-muted-foreground mt-1">{new Date(msg.created_at).toLocaleString()}</p>
                             </div>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="hover:bg-destructive/10 hover:text-destructive">
+                                <Button variant="ghost" size="icon" className="hover:bg-destructive/10 hover:text-destructive flex-shrink-0">
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -1418,8 +1734,8 @@ const Admin = () => {
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
-                          <div className="bg-background/50 p-3 rounded border border-border/50">
-                            <p className="text-sm font-rajdhani whitespace-pre-wrap leading-relaxed">{msg.message}</p>
+                          <div className="bg-background/50 p-2 sm:p-3 rounded border border-border/50">
+                            <p className="text-xs sm:text-sm font-rajdhani whitespace-pre-wrap leading-relaxed">{msg.message}</p>
                           </div>
                         </div>
                       ))}
@@ -1437,23 +1753,23 @@ const Admin = () => {
       <Dialog open={showNameDialog} onOpenChange={setShowNameDialog}>
         <DialogContent className="bg-card text-card-foreground border-border">
           <DialogHeader>
-            <DialogTitle className="font-orbitron">Welcome Admin!</DialogTitle>
-            <DialogDescription className="font-rajdhani text-muted-foreground">
+            <DialogTitle className="font-orbitron text-lg sm:text-xl">Welcome Admin!</DialogTitle>
+            <DialogDescription className="font-rajdhani text-muted-foreground text-xs sm:text-sm">
               Please enter your name to personalize your dashboard.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="adminName" className="font-mono">Name</Label>
+              <Label htmlFor="adminName" className="font-mono text-sm">Name</Label>
               <Input
                 id="adminName"
                 value={tempName}
                 onChange={e => setTempName(e.target.value)}
                 placeholder="Enter your name"
-                className="font-rajdhani"
+                className="font-rajdhani text-sm"
               />
             </div>
-            <Button onClick={handleSaveName} className="w-full">Save Name</Button>
+            <Button onClick={handleSaveName} className="w-full text-sm">Save Name</Button>
           </div>
         </DialogContent>
       </Dialog>

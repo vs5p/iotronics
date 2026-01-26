@@ -199,9 +199,9 @@
   }
 
   .btn-glow {
-    @apply px-8 py-4 font-bold uppercase tracking-widest;
+    @apply px-4 sm:px-8 py-3 sm:py-4 font-bold uppercase tracking-widest;
     @apply bg-primary text-primary-foreground rounded-lg;
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 text-sm sm:text-base;
     font-family: 'Orbitron', sans-serif;
     box-shadow: var(--shadow-glow-sm);
   }
