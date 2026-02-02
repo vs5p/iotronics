@@ -22,6 +22,7 @@ const Events = () => {
   const [submitting, setSubmitting] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [showPreviousEvents, setShowPreviousEvents] = useState(false);
   const navigate = useNavigate();
 
 
@@ -29,6 +30,11 @@ const Events = () => {
     getEvents().then(setEvents).catch(console.error);
   }, []);
 
+  // Separate events into upcoming and previous based on date
+  const upcomingEvents = events.filter(event => new Date(event.date) >= new Date());
+  const previousEvents = events.filter(event => new Date(event.date) < new Date());
+
+  const displayedEvents = showPreviousEvents ? previousEvents : upcomingEvents;
   const handleNotifyMe = async () => {
     if (!email || !email.includes("@")) {
       toast.error("Please enter a valid email address");
@@ -94,72 +100,100 @@ const Events = () => {
             </motion.div>
 
             {/* Dynamic Events List */}
-            {events.length > 0 ? (
+            {(upcomingEvents.length > 0 || previousEvents.length > 0) ? (
               <div className="mb-12 text-left">
                 <h1 className="font-orbitron text-4xl md:text-5xl font-bold mb-8 text-center">
-                  Upcoming <span className="gradient-text">Events</span>
+                  {showPreviousEvents ? "Previous" : "Upcoming"} <span className="gradient-text">Events</span>
                 </h1>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {events.map((event) => <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onClick={() => setSelectedEvent(event)}
-                    className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-colors cursor-pointer group"
-                    whileHover={{ y: -5 }}
-                  >
-                    {/* Thumbnail Banner */}
-                    {event.banner && (
-                      <div className="h-40 overflow-hidden relative">
-                        <img
-                          src={event.banner}
-                          alt={event.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                      </div>
-                    )}
 
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-mono">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(event.date).toLocaleDateString()}
-                        </div>
-                        {event.time && (
-                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 text-muted-foreground text-xs font-mono">
-                            <Clock className="w-3 h-3" />
-                            {event.time}
+                {/* Toggle Button */}
+                <div className="flex justify-center mb-8">
+                  <button
+                    onClick={() => setShowPreviousEvents(!showPreviousEvents)}
+                    className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary uppercase text-sm font-mono tracking-wider"
+                  >
+                    {showPreviousEvents ? "← View Upcoming Events" : "View Previous Events →"}
+                  </button>
+                </div>
+
+                {displayedEvents.length === 0 ? (
+                  <div className="text-center py-20">
+                    <p className="text-muted-foreground font-rajdhani text-lg">
+                      {showPreviousEvents
+                        ? "No previous events found"
+                        : "Upcoming events coming soon"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {displayedEvents.map((event) => (
+                      <motion.div
+                        key={event.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        onClick={() => {
+                          // If it's a past event with gallery images, go to gallery page
+                          if (showPreviousEvents && event.gallery_images && event.gallery_images.length > 0) {
+                            navigate(`/events/${event.id}/gallery`);
+                          } else {
+                            setSelectedEvent(event);
+                          }
+                        }}
+                        className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-colors cursor-pointer group"
+                        whileHover={{ y: -5 }}
+                      >
+                        {/* Thumbnail Banner */}
+                        {event.banner && (
+                          <div className="h-40 overflow-hidden relative">
+                            <img
+                              src={event.banner}
+                              alt={event.title}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                           </div>
                         )}
-                      </div>
-                      <h3 className="font-orbitron font-bold text-xl mb-2 group-hover:text-primary transition-colors">{event.title}</h3>
-                      <p className="text-muted-foreground font-rajdhani mb-4 line-clamp-3">
-                        {event.description}
-                      </p>
-                      {event.location && (
-                        <div className="text-sm font-mono text-muted-foreground mb-4">
-                          📍 {event.location}
-                        </div>
-                      )}
 
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="text-xs text-primary font-mono uppercase tracking-wider">View Details</span>
-                        {event.registration_link && (
-                          <span className="text-xs text-muted-foreground font-mono">Registration Open</span>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                  )}
-                </div>
+                        <div className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-mono">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(event.date).toLocaleDateString()}
+                            </div>
+                            {event.time && (
+                              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 text-muted-foreground text-xs font-mono">
+                                <Clock className="w-3 h-3" />
+                                {event.time}
+                              </div>
+                            )}
+                          </div>
+                          <h3 className="font-orbitron font-bold text-xl mb-2 group-hover:text-primary transition-colors">{event.title}</h3>
+                          <p className="text-muted-foreground font-rajdhani mb-4 line-clamp-3">
+                            {event.description}
+                          </p>
+                          {event.location && (
+                            <div className="text-sm font-mono text-muted-foreground mb-4">
+                              📍 {event.location}
+                            </div>
+                          )}
+
+                          <div className="mt-4 flex justify-between items-center">
+                            <span className="text-xs text-primary font-mono uppercase tracking-wider">View Details</span>
+                            {(event.enable_internal_registration || event.registration_link) && (
+                              <span className="text-xs text-muted-foreground font-mono">Registration Open</span>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <>
                 <h1 className="font-orbitron text-4xl md:text-6xl font-bold mb-6">
                   Events <span className="gradient-text">Coming Soon</span>
                 </h1>
-
                 {/* Animated Icon */}
                 <motion.div
                   className="w-32 h-32 mx-auto mb-8 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center"

@@ -10,6 +10,7 @@ import Achievements from "./pages/Achievements";
 import Team from "./pages/Team";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
+import EventGallery from "./pages/EventGallery";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/team" element={<Team />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetails />} />
+          <Route path="/events/:eventId/gallery" element={<EventGallery />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />

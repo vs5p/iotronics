@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, Edit2, LogOut, GripVertical, Download, ChevronDown, LayoutDashboard, Lightbulb, Newspaper, Users, FileSignature, Calendar, MessageSquare } from "lucide-react";
+import { Trash2, Edit2, LogOut, GripVertical, Download, ChevronDown, LayoutDashboard, Lightbulb, Newspaper, Users, FileSignature, Calendar, MessageSquare, Upload, Image } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -200,8 +200,11 @@ const Admin = () => {
     description: "",
     registration_link: "",
     banner: "",
+    gallery_images: [] as string[],
+    detailed_description: "",
   });
   const [editingEvent, setEditingEvent] = useState<any | null>(null);
+  const [editingPastEventGallery, setEditingPastEventGallery] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [adminName, setAdminName] = useState("");
   const [showNameDialog, setShowNameDialog] = useState(false);
@@ -216,6 +219,11 @@ const Admin = () => {
     image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
   });
 
+  // Gallery form for past events
+  const [galleryForm, setGalleryForm] = useState({
+    gallery_images: [] as string[],
+    detailed_description: "",
+  });
   const [submitting, setSubmitting] = useState(false);
 
   // Drag and drop sensors - MUST be before any conditional returns (React Hooks rule)
@@ -657,7 +665,7 @@ const Admin = () => {
         await addEvent(eventForm);
         toast.success("Event added successfully");
       }
-      setEventForm({ title: "", date: "", time: "", location: "", description: "", registration_link: "", banner: "" });
+      setEventForm({ title: "", date: "", time: "", location: "", description: "", registration_link: "", banner: "", gallery_images: [], detailed_description: "" });
       setEditingEvent(null);
       const data = await getEvents();
       setEvents(data);
@@ -689,12 +697,80 @@ const Admin = () => {
       description: event.description || "",
       registration_link: event.registration_link || "",
       banner: event.banner || "",
+      gallery_images: event.gallery_images || [],
+      detailed_description: event.detailed_description || "",
     });
   };
 
   const clearEventForm = () => {
-    setEventForm({ title: "", date: "", time: "", location: "", description: "", registration_link: "", banner: "" });
+    setEventForm({ title: "", date: "", time: "", location: "", description: "", registration_link: "", banner: "", gallery_images: [], detailed_description: "" });
     setEditingEvent(null);
+  };
+
+
+  // Past event gallery handlers
+  const handleEditPastEventGallery = (event: any) => {
+    setEditingPastEventGallery(event);
+    setGalleryForm({
+      gallery_images: event.gallery_images || [],
+      detailed_description: event.detailed_description || "",
+    });
+  };
+
+  const handleSavePastEventGallery = async () => {
+    if (!editingPastEventGallery) return;
+
+    setSubmitting(true);
+    try {
+      await updateEvent(editingPastEventGallery.id, {
+        gallery_images: galleryForm.gallery_images,
+        detailed_description: galleryForm.detailed_description,
+      });
+
+      toast.success("Gallery updated successfully");
+      setEditingPastEventGallery(null);
+      setGalleryForm({ gallery_images: [], detailed_description: "" });
+
+      // Refresh events list
+      const data = await getEvents();
+      setEvents(data);
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Failed to update gallery");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGalleryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const imageUrl = await uploadImage(file, 'event-gallery');
+
+      const newGallery = [...galleryForm.gallery_images];
+      newGallery[index] = imageUrl;
+      setGalleryForm({ ...galleryForm, gallery_images: newGallery });
+
+      toast.success('Image uploaded successfully!');
+    } catch (error: any) {
+      console.error('Upload failed:', error);
+      toast.error(error.message || 'Failed to upload image');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDeleteMessage = async (id: string) => {
@@ -777,23 +853,6 @@ const Admin = () => {
       toast.success("News image uploaded successfully");
     } catch (error: any) {
       toast.error(`Failed to upload news image: ${error.message || "Unknown error"}`);
-      console.error(error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleEventBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setSubmitting(true);
-      const url = await uploadImage(file, "event-banners");
-      setEventForm({ ...eventForm, banner: url } as any);
-      toast.success("Event banner uploaded successfully");
-    } catch (error: any) {
-      toast.error(`Failed to upload event banner: ${error.message || "Unknown error"}`);
       console.error(error);
     } finally {
       setSubmitting(false);
@@ -1548,101 +1607,88 @@ const Admin = () => {
             </TabsContent>
 
             <TabsContent value="events" className="space-y-4 sm:space-y-8">
+              {/* Add New Event Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg sm:text-xl md:text-2xl">{editingEvent ? "Edit Event" : "Add New Event"}</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl">
+                    {editingEvent ? "Edit Event" : "Add New Event"}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleAddEvent} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <form onSubmit={handleAddEvent} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="eventTitle">Event Title</Label>
                       <Input
-                        placeholder="Event Title"
+                        id="eventTitle"
+                        placeholder="Enter event title"
                         value={eventForm.title}
-                        onChange={e => setEventForm({ ...eventForm, title: e.target.value })}
+                        onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
                         required
-                        className="text-sm"
-                      />
-                      <Input
-                        type="date"
-                        value={eventForm.date}
-                        onChange={e => setEventForm({ ...eventForm, date: e.target.value })}
-                        required
-                        className="text-sm"
-                      />
-                      <Input
-                        placeholder="Time (e.g. 10:00 AM)"
-                        value={eventForm.time}
-                        onChange={e => setEventForm({ ...eventForm, time: e.target.value })}
-                        className="text-sm"
-                      />
-                      <Input
-                        placeholder="Location"
-                        value={eventForm.location}
-                        onChange={e => setEventForm({ ...eventForm, location: e.target.value })}
-                        className="text-sm"
-                      />
-                      <Input
-                        placeholder="Registration Link (Optional)"
-                        value={eventForm.registration_link}
-                        onChange={e => setEventForm({ ...eventForm, registration_link: e.target.value })}
-                        className="md:col-span-2 text-sm"
-                      />
-                      <div className="md:col-span-2 flex gap-2">
-                        <Input
-                          placeholder="Banner Image URL"
-                          value={(eventForm as any).banner || ""}
-                          onChange={e => setEventForm({ ...eventForm, banner: e.target.value } as any)}
-                          className="flex-1 text-sm"
-                        />
-                        <label className="flex items-center">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleEventBannerUpload}
-                            className="hidden"
-                            disabled={submitting}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-2 cursor-pointer"
-                            disabled={submitting}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              (e.currentTarget.previousElementSibling as HTMLInputElement)?.click();
-                            }}
-                          >
-                            {submitting ? "Uploading..." : "Upload"}
-                          </Button>
-                        </label>
-                      </div>
-                      {/* Banner Preview */}
-                      {(eventForm as any).banner && (
-                        <div className="md:col-span-2 relative h-32 sm:h-48 rounded-lg overflow-hidden border border-border">
-                          <img
-                            src={(eventForm as any).banner}
-                            alt="Banner Preview"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://placehold.co/600x400?text=Invalid+Image+URL";
-                            }}
-                          />
-                        </div>
-                      )}
-                      <Textarea
-                        placeholder="Event Description"
-                        value={eventForm.description}
-                        onChange={e => setEventForm({ ...eventForm, description: e.target.value })}
-                        className="md:col-span-2 text-sm"
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Button type="submit" disabled={submitting} className="text-sm">
-                        {submitting ? (editingEvent ? "Updating..." : "Adding...") : (editingEvent ? "Update Event" : "Add Event")}
+                    <div className="space-y-2">
+                      <Label htmlFor="eventDate">Date</Label>
+                      <Input
+                        id="eventDate"
+                        type="date"
+                        value={eventForm.date}
+                        onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="eventTime">Time (optional)</Label>
+                      <Input
+                        id="eventTime"
+                        type="time"
+                        value={eventForm.time}
+                        onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="eventLocation">Location (optional)</Label>
+                      <Input
+                        id="eventLocation"
+                        placeholder="Enter location"
+                        value={eventForm.location}
+                        onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
+                      />
+                    </div>
+                    <div className="md:col-span-2 space-y-2">
+                      <Label htmlFor="eventDescription">Description</Label>
+                      <Textarea
+                        id="eventDescription"
+                        placeholder="Enter event description"
+                        value={eventForm.description}
+                        onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+                        className="min-h-[100px]"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="eventRegLink">Registration Link (optional)</Label>
+                      <Input
+                        id="eventRegLink"
+                        placeholder="https://..."
+                        value={eventForm.registration_link}
+                        onChange={(e) => setEventForm({ ...eventForm, registration_link: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="eventBanner">Banner Image URL (optional)</Label>
+                      <Input
+                        id="eventBanner"
+                        placeholder="https://..."
+                        value={eventForm.banner}
+                        onChange={(e) => setEventForm({ ...eventForm, banner: e.target.value })}
+                      />
+                    </div>
+                    <div className="md:col-span-2 flex gap-2">
+                      <Button type="submit" disabled={submitting} className="flex-1">
+                        {submitting ? "Saving..." : editingEvent ? "Update Event" : "Add Event"}
                       </Button>
                       {editingEvent && (
-                        <Button type="button" variant="outline" onClick={clearEventForm} className="text-sm">
+                        <Button type="button" onClick={clearEventForm} variant="outline">
                           Cancel
                         </Button>
                       )}
@@ -1651,47 +1697,271 @@ const Admin = () => {
                 </CardContent>
               </Card>
 
+              {/* UPCOMING EVENTS SECTION */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg sm:text-xl md:text-2xl">Upcoming Events ({events.length})</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    Upcoming Events ({events.filter(e => new Date(e.date) >= new Date(new Date().setHours(0, 0, 0, 0))).length})
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {events.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">No events scheduled.</div>
+                  {events.filter(e => new Date(e.date) >= new Date(new Date().setHours(0, 0, 0, 0))).length === 0 ? (
+                    <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm sm:text-base">
+                      No upcoming events.
+                    </div>
+                  ) : (
+                    <div className="space-y-3 sm:space-y-4">
+                      {events
+                        .filter(e => new Date(e.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                        .map((event) => (
+                          <div key={event.id} className="p-3 sm:p-4 bg-muted/20 border border-border rounded-lg">
+                            <div className="flex justify-between items-start gap-2">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-extrabold text-lg sm:text-2xl font-orbitron tracking-wide break-words">
+                                  {event.title}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-primary font-semibold mt-1">
+                                  📅 {new Date(event.date).toLocaleDateString()}
+                                  {event.time && ` • ⏰ ${event.time}`}
+                                </p>
+                                {event.location && (
+                                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                                    📍 {event.location}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => handleEditEvent(event)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-primary hover:text-primary hover:bg-primary/10 h-8 w-8"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  onClick={() => handleDeleteEvent(event.id)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* PAST EVENTS SECTION WITH GALLERY MANAGEMENT */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
+                    <Image className="w-5 h-5 text-primary" />
+                    Past Events - Gallery Management ({events.filter(e => new Date(e.date) < new Date(new Date().setHours(0, 0, 0, 0))).length})
+                  </CardTitle>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+                    Upload images and add detailed descriptions for past events
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {events.filter(e => new Date(e.date) < new Date(new Date().setHours(0, 0, 0, 0))).length === 0 ? (
+                    <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm sm:text-base">
+                      No past events.
+                    </div>
                   ) : (
                     <div className="space-y-4">
-                      {events.map((event) => (
-                        <div key={event.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-muted/20 gap-4">
-                          <div>
-                            <h4 className="font-extrabold text-2xl tracking-wide">{event.title}</h4>
-                            <div className="text-sm text-muted-foreground flex gap-4">
-                              <span>{new Date(event.date).toLocaleDateString()} {event.time}</span>
-                              <span>{event.location}</span>
-                            </div>
-                            <p className="text-sm mt-1 max-w-xl">{event.description}</p>
-                          </div>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm" className="gap-2">
-                                <Trash2 className="w-4 h-4" /> Delete
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Event?</AlertDialogTitle>
-                                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <div className="flex justify-end gap-2 mt-4">
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteEvent(event.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                      {events
+                        .filter(e => new Date(e.date) < new Date(new Date().setHours(0, 0, 0, 0)))
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((event) => (
+                          <div key={event.id} className="border border-border rounded-lg overflow-hidden">
+                            {/* Event Header */}
+                            <div className="p-4 bg-muted/20 flex justify-between items-start gap-2">
+                              <div className="flex-1">
+                                <h4 className="font-extrabold text-lg sm:text-xl font-orbitron">
+                                  {event.title}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                                  📅 {new Date(event.date).toLocaleDateString()}
+                                  {event.time && ` • ⏰ ${event.time}`}
+                                </p>
+                                <div className="flex gap-2 mt-2">
+                                  <Badge variant={event.gallery_images?.length > 0 ? "default" : "secondary"}>
+                                    {event.gallery_images?.length || 0} Images
+                                  </Badge>
+                                  {event.detailed_description && (
+                                    <Badge variant="outline">Has Description</Badge>
+                                  )}
+                                </div>
                               </div>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                          <Button variant="outline" size="sm" className="gap-2" onClick={() => handleEditEvent(event)}>
-                            <Edit2 className="w-4 h-4" /> Edit
-                          </Button>
-                        </div>
-                      ))}
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => handleEditPastEventGallery(event)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-2"
+                                >
+                                  <Upload className="w-4 h-4" />
+                                  Manage Gallery
+                                </Button>
+                                <Button
+                                  onClick={() => handleEditEvent(event)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-primary hover:text-primary hover:bg-primary/10 h-8 w-8"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  onClick={() => handleDeleteEvent(event.id)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Gallery Editor (shown when editing) */}
+                            {editingPastEventGallery?.id === event.id && (
+                              <div className="p-4 border-t border-border bg-card space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <h5 className="font-semibold text-sm">Gallery Images</h5>
+                                  <span className="text-xs text-muted-foreground">
+                                    {galleryForm.gallery_images.filter(img => img).length} / 5 images
+                                  </span>
+                                </div>
+
+                                {/* Image Upload Slots */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {[0, 1, 2, 3, 4].map((index) => (
+                                    <div key={index} className="space-y-2">
+                                      <Label className="text-xs text-muted-foreground">
+                                        Image {index + 1} {index === 0 && "(Required for gallery)"}
+                                      </Label>
+
+                                      {/* Image Preview */}
+                                      {galleryForm.gallery_images[index] && (
+                                        <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border">
+                                          <img
+                                            src={galleryForm.gallery_images[index]}
+                                            alt={`Gallery ${index + 1}`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).src = "https://placehold.co/400x225?text=Error";
+                                            }}
+                                          />
+                                          <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-2 right-2 h-8 w-8"
+                                            onClick={() => {
+                                              const newGallery = [...galleryForm.gallery_images];
+                                              newGallery.splice(index, 1);
+                                              setGalleryForm({ ...galleryForm, gallery_images: newGallery });
+                                            }}
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        </div>
+                                      )}
+
+                                      {/* Upload/URL Input */}
+                                      <div className="flex gap-2">
+                                        <Input
+                                          placeholder="Image URL or upload below"
+                                          value={galleryForm.gallery_images[index] || ""}
+                                          onChange={(e) => {
+                                            const newGallery = [...galleryForm.gallery_images];
+                                            newGallery[index] = e.target.value;
+                                            setGalleryForm({
+                                              ...galleryForm,
+                                              gallery_images: newGallery.filter(img => img)
+                                            });
+                                          }}
+                                          className="text-sm flex-1"
+                                        />
+                                      </div>
+
+                                      {/* Upload Button */}
+                                      <label className="block">
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) => handleGalleryImageUpload(e, index)}
+                                          className="hidden"
+                                          disabled={submitting}
+                                        />
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="w-full gap-2"
+                                          disabled={submitting}
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                            input?.click();
+                                          }}
+                                        >
+                                          <Upload className="w-4 h-4" />
+                                          {submitting ? "Uploading..." : "Upload Image"}
+                                        </Button>
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Detailed Description */}
+                                <div className="space-y-2 pt-4 border-t border-border">
+                                  <Label className="text-sm font-semibold">
+                                    Detailed Description (for gallery page)
+                                  </Label>
+                                  <Textarea
+                                    placeholder="Enter a detailed description for the gallery page..."
+                                    value={galleryForm.detailed_description}
+                                    onChange={(e) => setGalleryForm({
+                                      ...galleryForm,
+                                      detailed_description: e.target.value
+                                    })}
+                                    className="min-h-[120px]"
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    This will be shown on the gallery page. If empty, the main event description will be used.
+                                  </p>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2 pt-4">
+                                  <Button
+                                    onClick={handleSavePastEventGallery}
+                                    disabled={submitting}
+                                    className="flex-1"
+                                  >
+                                    {submitting ? "Saving..." : "Save Gallery"}
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      setEditingPastEventGallery(null);
+                                      setGalleryForm({ gallery_images: [], detailed_description: "" });
+                                    }}
+                                    variant="outline"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   )}
                 </CardContent>
@@ -1746,7 +2016,7 @@ const Admin = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
+      </main >
 
       <PageFooter />
 
@@ -1773,7 +2043,7 @@ const Admin = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 };
 
