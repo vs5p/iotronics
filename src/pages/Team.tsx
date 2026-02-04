@@ -22,17 +22,32 @@ interface TeamGroup {
 
 const leadership: TeamMember[] = [
   {
-    name: "Alex Chen",
+    name: "Rounak Vyas",
     role: "President",
     specialization: "Embedded Systems & IoT Architecture",
-    avatar: "AC",
+    avatar: "/images/Heads/rounak.jpg",
   },
   {
-    name: "Sarah Williams",
+    name: "Rohit Soni",
     role: "Vice President",
     specialization: "Software Development & Cloud",
-    avatar: "SW",
+    avatar: "/images/Heads/rohitsoni.jpg",
+  }
+];
+
+const facultyCoordinators: TeamMember[] = [
+  {
+    name: "Ms.Smitha B",
+    role: "Assistant Professor, EEE Dept",
+    specialization: "Project Guidance & Mentorship",
+    avatar: "/images/coordinators/WhatsApp Image 2026-01-30 at 3.46.19 PM.jpeg",
   },
+  {
+    name: "Ms.Meghana A",
+    role: "Assistant Professor, EEE Dept",
+    specialization: "Technical Support & Innovation",
+    avatar: "/images/coordinators/WhatsApp Image 2026-01-28 at 1.46.38 PM.jpeg",
+  }
 ];
 
 const teams: TeamGroup[] = [
@@ -41,9 +56,12 @@ const teams: TeamGroup[] = [
     icon: <Code size={20} />,
     color: "primary",
     members: [
-      { name: "David Kim", role: "Lead Developer", specialization: "Full Stack Development", avatar: "DK" },
-      { name: "Priya Sharma", role: "Backend Developer", specialization: "APIs & Databases", avatar: "PS" },
-      { name: "Jake Morrison", role: "Frontend Developer", specialization: "React & UI/UX", avatar: "JM" },
+      { name: "Sankalp Vyas", role: "Lead Developer", specialization: "Full Stack Development", avatar: "/images/coding/Sankalp.jpg" },
+      { name: "Disha Gupta", role: "Backend Developer", specialization: "APIs & Databases", avatar: "/images/coding/Disha.jpg.jpeg" },
+      { name: "Karthik G", role: "Frontend Developer", specialization: "React & UI/UX", avatar: "/images/coding/Karthik G.jpg" },
+      { name: "Jayakrishnan R", role: "Frontend Developer", specialization: "React & UI/UX", avatar: "/images/coding/Jayakrishnan R.jpg" },
+      { name: "Sniti Jain", role: "Frontend Developer", specialization: "React & UI/UX", avatar: "/images/coding/Sniti Jain.jpg" },
+      { name: "Manish Omprakash", role: "Frontend Developer", specialization: "React & UI/UX", avatar: "/images/coding/Manish.jpg" },
     ],
   },
   {
@@ -51,38 +69,52 @@ const teams: TeamGroup[] = [
     icon: <Cpu size={20} />,
     color: "secondary",
     members: [
-      { name: "Raj Patel", role: "Technical Lead", specialization: "IoT Architecture", avatar: "RP" },
-      { name: "Michael Lee", role: "Hardware Engineer", specialization: "Embedded Systems", avatar: "ML" },
-      { name: "Emma Johnson", role: "Research Head", specialization: "Machine Learning", avatar: "EJ" },
+      { name: "Tanushri vijay", role: "Technical Lead", specialization: "IoT Architecture", avatar: "/images/tech/Tanushri.jpg" },
+      { name: "Aditya Suhas Satwik", role: "Hardware Engineer", specialization: "Embedded Systems", avatar: "/images/tech/Aditya Satwik.jpg" },
+      { name: "Karan M Bhat", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/Karan.jpg" },
+      { name: "Kavyesh Gujetiya", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/kavyesh gujetiya.jpeg" },
+      { name: "Ajay C A", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/Ajay C A.jpg" },
+      { name: "Shreya Fouzdar", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/Shreya Fouzdar.jpg" },
+      { name: "Aditya Vijaykumar", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/AdityaVG.jpg" },
+      { name: "Ananya Manjunath", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/Ananya Manjunath.jpg" },
+      { name: "Amogh D Pinglay", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/Amogh Pinglay.jpg" },
+      { name: "Keertana Kavitha", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/Keertana Kavitha.jpg" },
+      { name: "Madhusudhan M R", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/Madhusudhan M R.jpg" },
+      { name: "Meher Chaitanya", role: "Research Head", specialization: "Machine Learning", avatar: "/images/tech/Meher Chaitanya.jpg" },
+
     ],
   },
   {
-    name: "PR Team",
+    name: "Media And Content Team",
     icon: <Megaphone size={20} />,
     color: "accent",
     members: [
-      { name: "Lisa Wang", role: "PR Head", specialization: "Communications", avatar: "LW" },
-      { name: "Tom Bradley", role: "Social Media Manager", specialization: "Content Strategy", avatar: "TB" },
+      { name: "Yashaswini", role: "PR Head", specialization: "Lead", avatar: "/images/media/Yashaswini.jpg" },
+      { name: "Sameeksha Beram", role: "member-Design", specialization: "Content Strategy", avatar: "/images/media/sameeksha.jpg" },
+      { name: "Diddekunta Bhavitha", role: "member-Dop /Video", specialization: "Content Strategy", avatar: "/images/media/WhatsApp Image 2026-02-04 at 7.54.25 PM.jpeg" },
+      { name: "Srinidhi A U", role: "member-Design", specialization: "Content Strategy", avatar: "/images/media/20250701_092625~2.jpg" },
+      { name: "Adit jain", role: "member-Dop/Video", specialization: "Content Strategy", avatar: "/images/media/adit_jain.jpg" },
+      { name: "Hardik T", role: "member-Dop/Video", specialization: "Content Strategy", avatar: "/images/media/Hardik T.jpg" },
+      { name: "Jyothsna D.M", role: "member-Design", specialization: "Content Strategy", avatar: "/images/media/Jyothsna_102091.jpg" },
+      { name: "Harini Prabagaran", role: "member-Design", specialization: "Content Strategy", avatar: "/images/media/Harini.jpg" },
+      { name: "Umang", role: "member-Dop/Video", specialization: "Content Strategy", avatar: "/images/media/Umang.jpg" },
     ],
   },
   {
-    name: "Design Team",
+    name: "Administration And Communication Team",
     icon: <PenTool size={20} />,
     color: "glow-green",
     members: [
-      { name: "Nina Rodriguez", role: "Design Lead", specialization: "UI/UX Design", avatar: "NR" },
-      { name: "Chris Park", role: "Graphic Designer", specialization: "Visual Identity", avatar: "CP" },
+      { name: "Ujwala.P", role: "Lead", specialization: "UI/UX Design", avatar: "/images/admin_comm/Ujwala.P.jpg" },
+      { name: "Lakshmy S", role: "Co-Lead", specialization: "Visual Identity", avatar: "/images/admin_comm/Lakshmy S.jpg"},
+      { name: "Sai Vikas", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/saivikas.jpg" },
+      { name: "Keerthi V", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/Keerthi V.pdf" },
+      { name: "Sneha K Binu", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/SNEHA K BINU .HEIC" },
+      { name: "Siri Patil", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/Siri Patil.pdf" },
+      { name: "Amith Sham", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/Amith Sham.jpg" },
+      { name: "C.Nevesha Tanya", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/nothing.jpg" },
     ],
-  },
-  {
-    name: "Operations Team",
-    icon: <Wrench size={20} />,
-    color: "primary",
-    members: [
-      { name: "Amy Foster", role: "Events Coordinator", specialization: "Event Management", avatar: "AF" },
-      { name: "Ryan Smith", role: "Logistics Head", specialization: "Resource Management", avatar: "RS" },
-    ],
-  },
+  }
 ];
 
 const MemberCard = ({ member, index, color = "primary" }: { member: TeamMember; index: number; color?: string }) => (
@@ -119,10 +151,12 @@ const MemberCard = ({ member, index, color = "primary" }: { member: TeamMember; 
         </motion.svg>
 
         {/* Avatar circle */}
-        <div className={`absolute inset-2 rounded-full bg-gradient-to-br from-${color}/20 to-accent/20 border-2 border-${color}/30 flex items-center justify-center group-hover:border-${color} transition-colors`}>
-          <span className="font-orbitron text-xl font-bold gradient-text">
-            {member.avatar}
-          </span>
+        <div className={`absolute inset-2 rounded-full bg-gradient-to-br from-${color}/20 to-accent/20 border-2 border-${color}/30 flex items-center justify-center group-hover:border-${color} transition-colors overflow-hidden`}>
+          <img
+            src={member.avatar}
+            alt={member.name}
+            className="w-full h-full object-cover rounded-full"
+          />
         </div>
 
         {/* Connection nodes */}
@@ -249,7 +283,7 @@ const Team = () => {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.15 }}
                 >
-                  <div className="card-circuit text-center p-8 border-2 border-accent/30 bg-gradient-to-br from-accent/5 to-primary/5">
+                  <div className="card-circuit text-center p-8 border-2 border-accent/30 bg-gradient-to-br from-accent/5 to-primary/5 h-full flex flex-col items-center justify-center">
                     {/* Large Avatar */}
                     <motion.div
                       className="relative w-28 h-28 mx-auto mb-6"
@@ -294,10 +328,12 @@ const Team = () => {
                       </motion.svg>
 
                       {/* Avatar circle */}
-                      <div className="absolute inset-4 rounded-full bg-gradient-to-br from-accent/30 to-primary/30 border-2 border-accent/50 flex items-center justify-center group-hover:border-accent transition-colors">
-                        <span className="font-orbitron text-3xl font-bold gradient-text">
-                          {member.avatar}
-                        </span>
+                      <div className="absolute inset-4 rounded-full bg-gradient-to-br from-accent/30 to-primary/30 border-2 border-accent/50 flex items-center justify-center group-hover:border-accent transition-colors overflow-hidden">
+                        <img
+                          src={member.avatar}
+                          alt={member.name}
+                          className="w-full h-full object-cover rounded-full"
+                        />
                       </div>
 
                       {/* Connection nodes */}
@@ -340,6 +376,138 @@ const Team = () => {
                         <motion.button
                           key={i}
                           className="w-9 h-9 rounded-lg bg-muted/50 border border-border flex items-center justify-center text-muted-foreground hover:text-accent hover:border-accent transition-colors"
+                          whileHover={{ scale: 1.1, y: -2 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Icon size={16} />
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Faculty Coordinators Section */}
+        <section className="py-12 relative overflow-hidden">
+          <div className="container mx-auto px-4 relative z-10">
+            <motion.div
+              className="text-center mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="font-orbitron text-2xl md:text-3xl font-bold mb-2">
+                <span className="gradient-text">Faculty Coordinators</span>
+              </h2>
+              <p className="font-rajdhani text-muted-foreground">Supporting our mission with expertise and guidance</p>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 gap-8 max-w-2xl mx-auto">
+              {facultyCoordinators.map((member, index) => (
+                <motion.div
+                  key={member.name}
+                  className="group relative"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.15 }}
+                >
+                  <div className="card-circuit text-center p-8 border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-secondary/5 h-full flex flex-col items-center justify-center">
+                    {/* Large Avatar */}
+                    <motion.div
+                      className="relative w-28 h-28 mx-auto mb-6"
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      {/* Rotating ring */}
+                      <motion.svg
+                        className="absolute inset-0 w-full h-full"
+                        viewBox="0 0 100 100"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                      >
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth="2"
+                          strokeDasharray="15 5"
+                          fill="none"
+                          className="opacity-70 group-hover:opacity-100 transition-opacity"
+                        />
+                      </motion.svg>
+
+                      {/* Second rotating ring */}
+                      <motion.svg
+                        className="absolute inset-0 w-full h-full"
+                        viewBox="0 0 100 100"
+                        animate={{ rotate: -360 }}
+                        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                      >
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="38"
+                          stroke="hsl(var(--secondary))"
+                          strokeWidth="1"
+                          strokeDasharray="8 8"
+                          fill="none"
+                          className="opacity-50"
+                        />
+                      </motion.svg>
+
+                      {/* Avatar circle */}
+                      <div className="absolute inset-4 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 border-2 border-primary/50 flex items-center justify-center group-hover:border-primary transition-colors overflow-hidden">
+                        <img
+                          src={member.avatar}
+                          alt={member.name}
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      </div>
+
+                      {/* Connection nodes */}
+                      {[0, 60, 120, 180, 240, 300].map((angle) => (
+                        <motion.div
+                          key={angle}
+                          className="absolute w-2 h-2 rounded-full bg-primary"
+                          style={{
+                            top: `${50 + 45 * Math.sin((angle * Math.PI) / 180)}%`,
+                            left: `${50 + 45 * Math.cos((angle * Math.PI) / 180)}%`,
+                            transform: "translate(-50%, -50%)",
+                          }}
+                          animate={{
+                            scale: [1, 1.5, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            delay: angle / 360,
+                          }}
+                        />
+                      ))}
+                    </motion.div>
+
+                    {/* Info */}
+                    <h3 className="font-orbitron text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
+                      {member.name}
+                    </h3>
+                    <p className="font-rajdhani text-primary font-bold text-lg mb-2">
+                      {member.role}
+                    </p>
+                    <p className="font-mono text-sm text-muted-foreground mb-6">
+                      {member.specialization}
+                    </p>
+
+                    {/* Social links */}
+                    <div className="flex justify-center gap-3">
+                      {[Linkedin, Github, Twitter].map((Icon, i) => (
+                        <motion.button
+                          key={i}
+                          className="w-9 h-9 rounded-lg bg-muted/50 border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
                           whileHover={{ scale: 1.1, y: -2 }}
                           whileTap={{ scale: 0.95 }}
                         >
