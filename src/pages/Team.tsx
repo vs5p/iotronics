@@ -105,14 +105,14 @@ const teams: TeamGroup[] = [
     icon: <PenTool size={20} />,
     color: "glow-green",
     members: [
-      { name: "Ujwala.P", role: "Lead", specialization: "UI/UX Design", avatar: "/images/admin_comm/Ujwala.P.jpg" },
+      { name: "Ujwala.P", role: "Lead", specialization: "UI/UX Design", avatar: "/images/admin_comm/ujwalaP.jpeg" },
       { name: "Lakshmy S", role: "Co-Lead", specialization: "Visual Identity", avatar: "/images/admin_comm/Lakshmy S.jpg"},
       { name: "Sai Vikas", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/saivikas.jpg" },
-      { name: "Keerthi V", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/Keerthi V.pdf" },
-      { name: "Sneha K Binu", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/SNEHA K BINU .HEIC" },
-      { name: "Siri Patil", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/Siri Patil.pdf" },
+      { name: "Keerthi V", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/keerthi V.jpeg" },
+      { name: "Sneha K Binu", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/sneha.jpeg" },
+      { name: "Siri Patil", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/siripatil.jpeg" },
       { name: "Amith Sham", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/Amith Sham.jpg" },
-      { name: "C.Nevesha Tanya", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/nothing.jpg" },
+      { name: "C.Nevesha Tanya", role: "member", specialization: "Visual Identity", avatar: "/images/admin_comm/cnevasha.jpeg" },
     ],
   }
 ];
