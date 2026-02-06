@@ -81,10 +81,10 @@ const Home = () => {
           }} />
 
           {/* What We Do Section */}
-          <section id="what-we-do" className="py-24 relative overflow-hidden">
+          <section id="what-we-do" className="py-12 sm:py-16 md:py-24 relative overflow-hidden">
             <div className="container mx-auto px-4 relative z-10">
               <motion.div
-                className="text-center mb-16"
+                className="text-center mb-12 sm:mb-16"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -97,46 +97,46 @@ const Home = () => {
                   <span className="font-mono text-sm text-primary">WHAT WE DO</span>
                 </motion.div>
 
-                <h2 className="font-orbitron text-4xl md:text-5xl font-bold mb-6">
+                <h2 className="font-orbitron text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
                   Building the <span className="gradient-text">Future</span> of IoT
                 </h2>
 
-                <p className="font-rajdhani text-lg text-muted-foreground max-w-2xl mx-auto">
+                <p className="font-rajdhani text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4 sm:px-0">
                   IoTRONICS is a student-driven club dedicated to exploring the limitless
                   possibilities of the Internet of Things. We combine creativity with
                   technology to solve real-world problems.
                 </p>
               </motion.div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {[
                   {
-                    icon: <Cpu className="w-8 h-8" />,
+                    icon: <Cpu className="w-6 sm:w-8 h-6 sm:h-8" />,
                     title: "Hardware Development",
                     desc: "Design and build IoT devices using Arduino, ESP32, Raspberry Pi, and custom PCBs."
                   },
                   {
-                    icon: <Code className="w-8 h-8" />,
+                    icon: <Code className="w-6 sm:w-8 h-6 sm:h-8" />,
                     title: "Software Integration",
                     desc: "Develop firmware, mobile apps, and cloud platforms to power smart devices."
                   },
                   {
-                    icon: <Wifi className="w-8 h-8" />,
+                    icon: <Wifi className="w-6 sm:w-8 h-6 sm:h-8" />,
                     title: "Network & Connectivity",
                     desc: "Explore WiFi, Bluetooth, LoRa, and other protocols for seamless communication."
                   },
                   {
-                    icon: <Lightbulb className="w-8 h-8" />,
+                    icon: <Lightbulb className="w-6 sm:w-8 h-6 sm:h-8" />,
                     title: "Innovation Labs",
                     desc: "Experiment with cutting-edge technologies in our state-of-the-art lab space."
                   },
                   {
-                    icon: <Settings className="w-8 h-8" />,
+                    icon: <Settings className="w-6 sm:w-8 h-6 sm:h-8" />,
                     title: "Workshops & Training",
                     desc: "Regular hands-on sessions to learn new skills and stay updated with trends."
                   },
                   {
-                    icon: <Zap className="w-8 h-8" />,
+                    icon: <Zap className="w-6 sm:w-8 h-6 sm:h-8" />,
                     title: "Competitions",
                     desc: "Participate in hackathons, tech fests, and national-level competitions."
                   }
@@ -150,15 +150,15 @@ const Home = () => {
                     transition={{ delay: index * 0.1 }}
                   >
                     <motion.div
-                      className="w-16 h-16 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 text-primary group-hover:border-primary/50 transition-colors"
+                      className="w-14 sm:w-16 h-14 sm:h-16 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 sm:mb-6 text-primary group-hover:border-primary/50 transition-colors"
                       whileHover={{ scale: 1.1, rotate: 5 }}
                     >
                       {item.icon}
                     </motion.div>
-                    <h3 className="font-orbitron text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
+                    <h3 className="font-orbitron text-base sm:text-xl font-semibold mb-2 sm:mb-3 group-hover:text-primary transition-colors">
                       {item.title}
                     </h3>
-                    <p className="font-rajdhani text-muted-foreground leading-relaxed">
+                    <p className="font-rajdhani text-sm sm:text-base text-muted-foreground leading-relaxed">
                       {item.desc}
                     </p>
                   </motion.div>

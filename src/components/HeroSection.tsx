@@ -183,7 +183,7 @@ const HeroSection = ({ onScrollDown }: HeroSectionProps) => {
 
             {/* Title */}
             <motion.h1
-              className="font-orbitron text-5xl md:text-7xl font-bold mb-4 tracking-wider"
+              className="font-orbitron text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-wider px-2 sm:px-0"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8, duration: 0.6 }}
@@ -218,7 +218,7 @@ const HeroSection = ({ onScrollDown }: HeroSectionProps) => {
 
             {/* Subtitle */}
             <motion.p
-              className="font-rajdhani text-xl md:text-2xl text-muted-foreground mb-2 tracking-[0.2em] uppercase"
+              className="font-rajdhani text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground mb-2 tracking-[0.2em] uppercase px-2 sm:px-0"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1, duration: 0.6 }}
@@ -228,7 +228,7 @@ const HeroSection = ({ onScrollDown }: HeroSectionProps) => {
 
             {/* Description */}
             <motion.p
-              className="font-rajdhani text-lg text-muted-foreground max-w-2xl mb-8 leading-relaxed"
+              className="font-rajdhani text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mb-8 leading-relaxed px-4 sm:px-0"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.2, duration: 0.6 }}
@@ -240,26 +240,26 @@ const HeroSection = ({ onScrollDown }: HeroSectionProps) => {
 
             {/* Stats */}
             <motion.div
-              className="flex flex-wrap justify-center gap-8 mb-12"
+              className="flex flex-wrap justify-center gap-4 sm:gap-8 mb-8 sm:mb-12 px-2 sm:px-0"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.4, duration: 0.6 }}
             >
               {[
-                { value: 50, suffix: "+", label: "Members", icon: <Users size={20} /> },
-                { value: 25, suffix: "+", label: "Projects", icon: <Cpu size={20} /> },
-                { value: 10, suffix: "+", label: "Events", icon: <Zap size={20} /> },
+                { value: 50, suffix: "+", label: "Members", icon: <Users size={16} /> },
+                { value: 25, suffix: "+", label: "Projects", icon: <Cpu size={16} /> },
+                { value: 10, suffix: "+", label: "Events", icon: <Zap size={16} /> },
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}
-                  className="flex flex-col items-center px-6"
+                  className="flex flex-col items-center px-3 sm:px-6"
                   whileHover={{ scale: 1.1, y: -5 }}
                 >
                   <div className="text-primary mb-2">{stat.icon}</div>
-                  <div className="font-orbitron text-3xl font-bold text-foreground">
+                  <div className="font-orbitron text-2xl sm:text-3xl font-bold text-foreground">
                     <AnimatedCounter target={stat.value} suffix={stat.suffix} delay={3500} />
                   </div>
-                  <div className="font-rajdhani text-sm text-muted-foreground uppercase tracking-wider">
+                  <div className="font-rajdhani text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
                     {stat.label}
                   </div>
                 </motion.div>
@@ -268,23 +268,23 @@ const HeroSection = ({ onScrollDown }: HeroSectionProps) => {
 
             {/* CTA Buttons */}
             <motion.div
-              className="flex flex-wrap justify-center gap-4"
+              className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4 px-4 sm:px-0"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.6, duration: 0.6 }}
             >
-              <Link to="/projects">
+              <Link to="/projects" className="w-full sm:w-auto">
                 <motion.button
-                  className="btn-glow"
+                  className="btn-glow w-full sm:w-auto"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   Explore Projects
                 </motion.button>
               </Link>
-              <Link to="/admin">
+              <Link to="/admin" className="w-full sm:w-auto">
                 <motion.button
-                  className="btn-circuit"
+                  className="btn-circuit w-full sm:w-auto"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >

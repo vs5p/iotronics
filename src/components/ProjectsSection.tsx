@@ -65,7 +65,7 @@ const ProjectsSection = () => {
   }
 
   return (
-    <section id="projects" className="py-32 relative overflow-hidden bg-muted/30">
+    <section id="projects" className="py-12 sm:py-20 md:py-32 relative overflow-hidden bg-muted/30">
       {/* Circuit pattern overlay */}
       <div className="absolute inset-0 opacity-5">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -83,7 +83,7 @@ const ProjectsSection = () => {
       <div className="container mx-auto px-4 relative z-10">
         {/* Section header */}
         <motion.div
-          className="text-center mb-20"
+          className="text-center mb-12 sm:mb-16 md:mb-20"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -96,11 +96,11 @@ const ProjectsSection = () => {
             <span className="font-mono text-sm text-secondary">OUR PROJECTS</span>
           </motion.div>
 
-          <h2 className="font-orbitron text-4xl md:text-5xl font-bold mb-6">
+          <h2 className="font-orbitron text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
             Innovation in <span className="text-secondary">Action</span>
           </h2>
 
-          <p className="font-rajdhani text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="font-rajdhani text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4 sm:px-0">
             From concept to creation, our projects showcase the power of IoT technology
             in solving real-world challenges.
           </p>
@@ -108,9 +108,9 @@ const ProjectsSection = () => {
 
         {/* Projects grid */}
         {projects.length === 0 ? (
-          <div className="text-center text-gray-400 text-xl py-12">No projects yet. Check back soon!</div>
+          <div className="text-center text-gray-400 text-lg sm:text-xl py-12">No projects yet. Check back soon!</div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
             {projects.map((project, index) => (
               <motion.div
                 key={project.id}

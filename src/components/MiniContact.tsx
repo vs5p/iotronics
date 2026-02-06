@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 const MiniContact = () => {
   return (
-    <section className="py-16 relative overflow-hidden bg-muted/30">
+    <section className="py-8 sm:py-12 md:py-16 relative overflow-hidden bg-muted/30">
       <div className="container mx-auto px-4">
         <motion.div
           className="max-w-4xl mx-auto text-center"
@@ -20,19 +20,19 @@ const MiniContact = () => {
             <span className="font-mono text-sm text-primary">GET IN TOUCH</span>
           </motion.div>
 
-          <h3 className="font-orbitron text-3xl md:text-4xl font-bold mb-4">
+          <h3 className="font-orbitron text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 px-2 sm:px-0">
             Ready to <span className="gradient-text">Connect</span>?
           </h3>
           
-          <p className="font-rajdhani text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+          <p className="font-rajdhani text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 sm:mb-8 px-4 sm:px-0">
             Have questions about joining the club, collaborating on projects, or just want to say hi? 
             We'd love to hear from you!
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/contact">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+            <Link to="/contact" className="w-full sm:w-auto">
               <motion.button
-                className="btn-glow flex items-center gap-2"
+                className="btn-glow flex items-center justify-center gap-2 w-full sm:w-auto"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -41,11 +41,11 @@ const MiniContact = () => {
               </motion.button>
             </Link>
             
-            <span className="font-rajdhani text-muted-foreground">or email us at</span>
+            <span className="font-rajdhani text-sm sm:text-base text-muted-foreground">or email us at</span>
             
             <motion.a
               href="mailto:iotronics@college.edu"
-              className="font-mono text-primary hover:underline"
+              className="font-mono text-xs sm:text-sm text-primary hover:underline"
               whileHover={{ scale: 1.05 }}
             >
               iotronics@college.edu
