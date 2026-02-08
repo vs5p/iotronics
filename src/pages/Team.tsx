@@ -25,13 +25,13 @@ const leadership: TeamMember[] = [
     name: "Rounak Vyas",
     role: "President",
     specialization: "Embedded Systems & IoT Architecture",
-    avatar: "/images/Heads/rounak.jpg",
+    avatar: "/images/Heads/Rounak_Vyas.jpg",
   },
   {
     name: "Rohit Soni",
     role: "Vice President",
     specialization: "Software Development & Cloud",
-    avatar: "/images/Heads/rohitsoni.jpg",
+    avatar: "/images/Heads/Rohit Soni.jpg",
   }
 ];
 
@@ -128,7 +128,7 @@ const MemberCard = ({ member, index, color = "primary" }: { member: TeamMember; 
     <div className="card-circuit text-center">
       {/* Avatar */}
       <motion.div
-        className="relative w-20 h-20 mx-auto mb-4"
+        className="relative w-28 h-28 mx-auto mb-4"
         whileHover={{ scale: 1.1 }}
       >
         {/* Rotating ring */}
@@ -156,6 +156,27 @@ const MemberCard = ({ member, index, color = "primary" }: { member: TeamMember; 
             src={member.avatar}
             alt={member.name}
             className="w-full h-full object-cover rounded-full"
+            style={(() => {
+              const name = member.name;
+              // Zoom out and crop to upper side
+              if (name === "Kavyesh Gujetiya" || name === "Amogh D Pinglay") {
+                return { objectPosition: 'center top', transform: 'scale(0.9)' };
+              }
+              // Crop to upper side only
+              if (name === "Shreya Fouzdar" || name === "Aditya Vijaykumar" || name === "Hardik T" || name === "Jyothsna D.M" || name === "Ajay C A") {
+                return { objectPosition: 'center top', transform: 'scale(1.1)' };
+              }
+              // Zoom in a bit to center
+              if (name === "C.Nevesha Tanya") {
+                return { objectPosition: 'center center', transform: 'scale(1.3)' };
+              }
+              // Disha Gupta - keep existing
+              if (name === "Disha Gupta") {
+                return { objectPosition: 'center top', transform: 'scale(1.4)' };
+              }
+              // Default
+              return { objectPosition: 'center center', transform: 'scale(1.1)' };
+            })()}
           />
         </div>
 
@@ -286,7 +307,7 @@ const Team = () => {
                   <div className="card-circuit text-center p-8 border-2 border-accent/30 bg-gradient-to-br from-accent/5 to-primary/5 h-full flex flex-col items-center justify-center">
                     {/* Large Avatar */}
                     <motion.div
-                      className="relative w-28 h-28 mx-auto mb-6"
+                      className="relative w-36 h-36 mx-auto mb-6"
                       whileHover={{ scale: 1.1 }}
                     >
                       {/* Rotating ring */}
@@ -333,6 +354,10 @@ const Team = () => {
                           src={member.avatar}
                           alt={member.name}
                           className="w-full h-full object-cover rounded-full"
+                          style={member.name === "Rounak Vyas" || member.name === "Rohit Soni" 
+                            ? { objectPosition: 'center top', transform: 'scale(1.2)' }
+                            : { objectPosition: 'center center' }
+                          }
                         />
                       </div>
 
@@ -418,7 +443,7 @@ const Team = () => {
                   <div className="card-circuit text-center p-8 border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-secondary/5 h-full flex flex-col items-center justify-center">
                     {/* Large Avatar */}
                     <motion.div
-                      className="relative w-28 h-28 mx-auto mb-6"
+                      className="relative w-36 h-36 mx-auto mb-6"
                       whileHover={{ scale: 1.1 }}
                     >
                       {/* Rotating ring */}
@@ -465,6 +490,7 @@ const Team = () => {
                           src={member.avatar}
                           alt={member.name}
                           className="w-full h-full object-cover rounded-full"
+                          style={{ objectPosition: 'center center', transform: 'scale(1.1)' }}
                         />
                       </div>
 
